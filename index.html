@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="InCheck Lite usage dashboard" />
+  <title>InCheck Lite | Usage Dashboard</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="./assets/css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <div class="topbar__left">
+      <div class="brand">
+        <div class="brand__mark" aria-hidden="true">IC</div>
+        <div class="brand__text">
+          <div class="brand__title">InCheck Lite</div>
+          <div class="brand__subtitle">Usage Dashboard</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="topbar__right">
+      <div class="pill" id="lastUpdatedPill" title="Last time data was fetched">
+        <span class="dot dot--idle" id="statusDot"></span>
+        <span id="lastUpdatedText">Not loaded</span>
+      </div>
+
+      <button class="btn btn--ghost" id="btnRefresh" type="button">
+        Refresh
+      </button>
+
+      <button class="btn" id="btnExportCsv" type="button">
+        Export CSV
+      </button>
+    </div>
+  </header>
+
+  <main id="main" class="container">
+    <section class="hero">
+      <div class="hero__left">
+        <h1>Client session usage & limits</h1>
+        <p class="muted">
+          Track committed minutes vs consumed minutes by Client / Account.
+          Quickly identify accounts nearing or exceeding their limit.
+        </p>
+      </div>
+
+      <div class="hero__right">
+        <div class="kpi-grid">
+          <div class="kpi kpi--danger">
+            <div class="kpi__label">Over limit</div>
+            <div class="kpi__value" id="kpiOver">—</div>
+          </div>
+          <div class="kpi kpi--warning">
+            <div class="kpi__label">Near limit</div>
+            <div class="kpi__value" id="kpiNear">—</div>
+          </div>
+          <div class="kpi kpi--ok">
+            <div class="kpi__label">OK</div>
+            <div class="kpi__value" id="kpiOk">—</div>
+          </div>
+          <div class="kpi kpi--neutral">
+            <div class="kpi__label">No commit set</div>
+            <div class="kpi__value" id="kpiNoCommit">—</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel__head">
+        <h2>Controls</h2>
+        <div class="panel__headRight">
+          <button class="btn btn--ghost" id="btnResetFilters" type="button">Reset</button>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="control">
+          <label for="searchInput">Search</label>
+          <input id="searchInput" type="search" placeholder="Client, account, status…" autocomplete="off" />
+        </div>
+
+        <div class="control">
+          <label for="statusSelect">Status</label>
+          <select id="statusSelect">
+            <option value="ALL">All</option>
+            <option value="OVER LIMIT">Over limit</option>
+            <option value="NEAR LIMIT">Near limit</option>
+            <option value="OK">OK</option>
+            <option value="NO COMMIT SET">No commit set</option>
+          </select>
+        </div>
+
+        <div class="control">
+          <label for="clientSelect">Client</label>
+          <select id="clientSelect">
+            <option value="ALL">All clients</option>
+          </select>
+        </div>
+
+        <div class="control">
+          <label for="sortSelect">Sort</label>
+          <select id="sortSelect">
+            <option value="remainingAsc">Remaining (low → high)</option>
+            <option value="remainingDesc">Remaining (high → low)</option>
+            <option value="usedDesc">Used (high → low)</option>
+            <option value="clientAsc">Client (A → Z)</option>
+          </select>
+        </div>
+
+        <div class="control">
+          <label for="pageSizeSelect">Rows</label>
+          <select id="pageSizeSelect">
+            <option value="10">10</option>
+            <option value="25" selected>25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="hint muted" id="thresholdHint"></div>
+    </section>
+
+    <section class="grid-2">
+      <section class="panel">
+        <div class="panel__head">
+          <h2>Most urgent accounts</h2>
+          <span class="muted">Lowest remaining minutes</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chartUrgent" height="140"></canvas>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel__head">
+          <h2>Distribution by status</h2>
+          <span class="muted">Count of accounts</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chartStatus" height="140"></canvas>
+        </div>
+      </section>
+    </section>
+
+    <section class="panel">
+      <div class="panel__head">
+        <h2>Accounts</h2>
+        <div class="panel__headRight">
+          <div class="muted" id="resultCount">—</div>
+        </div>
+      </div>
+
+      <div class="table-wrap" role="region" aria-label="Accounts table" tabindex="0">
+        <table class="table" id="accountsTable">
+          <thead>
+            <tr>
+              <th data-sort="client">Client</th>
+              <th data-sort="account">Account</th>
+              <th class="num" data-sort="committed">Committed</th>
+              <th class="num" data-sort="used">Used</th>
+              <th class="num" data-sort="remaining">Remaining</th>
+              <th data-sort="status">Status</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="pagination">
+        <button class="btn btn--ghost" id="btnPrev" type="button">Prev</button>
+        <div class="pagination__meta">
+          <span id="pageMeta">—</span>
+        </div>
+        <button class="btn btn--ghost" id="btnNext" type="button">Next</button>
+      </div>
+    </section>
+
+    <footer class="footer muted">
+      <div>
+        <span>© <span id="year"></span> InCheck360</span>
+        <span class="sep">•</span>
+        <span id="buildInfo">Dashboard</span>
+      </div>
+    </footer>
+  </main>
+
+  <script src="./assets/js/config.js"></script>
+  <script src="./assets/js/utils.js"></script>
+  <script src="./assets/js/app.js"></script>
+</body>
+</html>
