@@ -1,9 +1,10 @@
+```html
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>CSM Sessions Dashboard</title>
+  <title>CSM Sessions Dashboard (Enhanced)</title>
 
   <!-- Charts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -49,7 +50,7 @@
     a{ color: var(--primary2); text-decoration:none; }
     a:hover{ text-decoration: underline; }
 
-    .wrap{ max-width: 1240px; margin:0 auto; padding: 18px 16px 30px; }
+    .wrap{ max-width: 1320px; margin:0 auto; padding: 18px 16px 30px; }
 
     /* Top */
     header{
@@ -73,6 +74,7 @@
       display:flex;
       align-items:center;
       gap:10px;
+      min-width: 320px;
     }
     .logo{
       width:42px;height:42px;border-radius:14px;
@@ -117,6 +119,7 @@
       flex-wrap:wrap;
       gap:10px;
       align-items:flex-end;
+      padding-bottom: 10px;
     }
     label{
       display:block;
@@ -137,16 +140,33 @@
     input::placeholder{ color: rgba(91,103,128,.65); }
     button{
       cursor:pointer;
-      font-weight: 700;
+      font-weight: 800;
       background: linear-gradient(180deg, rgba(59,130,246,.15), rgba(59,130,246,.06));
       border-color: rgba(59,130,246,.25);
     }
     button:hover{ filter: brightness(1.03); }
     button.secondary{
-      font-weight: 600;
+      font-weight: 700;
       background: rgba(255,255,255,.95);
       border-color: var(--border);
     }
+    button:disabled{
+      cursor:not-allowed;
+      opacity:.6;
+    }
+
+    .toggle{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding: 9px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.95);
+      box-shadow: 0 8px 18px rgba(15,23,42,.05);
+      min-height: 40px;
+    }
+    .toggle input{ min-height:auto; box-shadow:none; }
 
     /* Layout */
     .grid{
@@ -165,11 +185,25 @@
     }
 
     .kpi{ grid-column: span 3; }
-    .kpi .t{ font-size:12px; color: var(--muted); }
-    .kpi .v{ font-size:26px; font-weight: 900; margin-top:8px; letter-spacing: .2px; }
-    .kpi .s{ font-size:12px; color: var(--muted); margin-top:6px; }
+    .kpi .t{ font-size:12px; color: var(--muted); display:flex; justify-content:space-between; gap:10px; }
+    .kpi .v{ font-size:26px; font-weight: 950; margin-top:8px; letter-spacing: .2px; }
+    .kpi .s{ font-size:12px; color: var(--muted); margin-top:6px; line-height:1.3; }
+    .delta{
+      font-size:11px;
+      font-weight: 850;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border:1px solid var(--border);
+      background: rgba(246,248,255,.75);
+      white-space:nowrap;
+    }
+    .delta.up{ border-color: rgba(34,197,94,.25); background: rgba(34,197,94,.08); color: #0b6b2a; }
+    .delta.down{ border-color: rgba(239,68,68,.25); background: rgba(239,68,68,.08); color: #8a1c1c; }
+    .delta.neutral{ opacity:.8; }
 
+    .span4{ grid-column: span 4; }
     .span6{ grid-column: span 6; }
+    .span8{ grid-column: span 8; }
     .span12{ grid-column: span 12; }
 
     .sectionTitle{
@@ -181,7 +215,7 @@
       margin-bottom: 10px;
     }
     .sectionTitle .title{
-      font-weight: 900;
+      font-weight: 950;
       font-size: 14px;
       margin:0;
     }
@@ -215,7 +249,9 @@
       border:1px solid var(--border);
       border-radius: 14px;
       background: rgba(246,248,255,.7);
+      cursor:pointer;
     }
+    .attentionItem:hover{ filter: brightness(1.02); }
     .attentionItem .left{
       display:flex;
       align-items:center;
@@ -223,19 +259,20 @@
       min-width: 0;
     }
     .attentionItem .name{
-      font-weight: 800;
+      font-weight: 900;
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
-      max-width: 360px;
+      max-width: 420px;
     }
     .attentionItem .meta{
       font-size:12px;
       color: var(--muted);
       margin-top:2px;
+      line-height: 1.25;
     }
     .bar{
-      width: 190px;
+      width: 200px;
       height: 10px;
       border-radius: 999px;
       background: rgba(15,23,42,.06);
@@ -247,6 +284,34 @@
       width:0%;
       background: var(--primary);
       border-radius: 999px;
+    }
+
+    /* Actions list */
+    .actionsList{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top:10px;
+    }
+    .actionItem{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
+      padding: 10px 12px;
+      border:1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(255,255,255,.92);
+    }
+    .actionItem .aTitle{ font-weight: 950; font-size: 13px; }
+    .actionItem .aSub{ margin-top:4px; font-size:12px; color: var(--muted); line-height:1.3; }
+    .actionBtns{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+    .miniBtn{
+      font-weight: 850;
+      font-size: 12px;
+      padding: 8px 10px;
+      min-height: 34px;
+      border-radius: 12px;
     }
 
     /* Table area */
@@ -303,12 +368,122 @@
       100%{ left:120%; }
     }
 
+    /* Drawer */
+    .drawerBackdrop{
+      position: fixed;
+      inset: 0;
+      background: rgba(15,23,42,.35);
+      backdrop-filter: blur(3px);
+      display:none;
+      z-index: 40;
+    }
+    .drawer{
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: min(520px, 96vw);
+      height: 100vh;
+      background: rgba(255,255,255,.95);
+      border-left: 1px solid var(--border);
+      box-shadow: -20px 0 50px rgba(15,23,42,.16);
+      z-index: 50;
+      transform: translateX(102%);
+      transition: transform .22s ease;
+      display:flex;
+      flex-direction:column;
+    }
+    .drawer.open{ transform: translateX(0%); }
+    .drawerHeader{
+      padding: 14px 14px 12px;
+      border-bottom: 1px solid var(--border);
+      display:flex;
+      justify-content:space-between;
+      gap: 10px;
+      align-items:flex-start;
+    }
+    .drawerTitle{ font-weight: 950; font-size: 15px; margin:0; }
+    .drawerSub{ margin-top:4px; font-size:12px; color: var(--muted); line-height:1.3; }
+    .drawerBody{
+      padding: 14px;
+      overflow:auto;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .drawerCard{
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 12px;
+      background: rgba(246,248,255,.55);
+    }
+    .kv{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top: 10px; }
+    .kv .k{ font-size:12px; color: var(--muted); }
+    .kv .val{ font-family: var(--mono); font-weight: 900; margin-top: 4px; }
+    .listSmall{ display:flex; flex-direction:column; gap:8px; margin-top: 10px; }
+    .listSmall .row{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border:1px solid rgba(231,236,255,.9);
+      background: rgba(255,255,255,.8);
+      font-size:12px;
+      color: var(--muted);
+    }
+    .row strong{ color: var(--text); }
+    .divider{ height:1px; background: rgba(231,236,255,.9); margin: 6px 0; }
+
+    /* Modal */
+    .modalBackdrop{
+      position:fixed;
+      inset:0;
+      background: rgba(15,23,42,.35);
+      backdrop-filter: blur(3px);
+      display:none;
+      z-index: 60;
+    }
+    .modal{
+      position:fixed;
+      top:50%;
+      left:50%;
+      transform: translate(-50%,-50%);
+      width: min(720px, 96vw);
+      background: rgba(255,255,255,.96);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: 0 30px 80px rgba(15,23,42,.22);
+      display:none;
+      z-index: 70;
+      overflow:hidden;
+    }
+    .modalHeader{
+      padding: 14px 14px 12px;
+      border-bottom: 1px solid var(--border);
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:flex-start;
+    }
+    .modalBody{ padding: 14px; }
+    .modalGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .help{ font-size:12px; color: var(--muted); line-height:1.35; margin-top:6px; }
+    .miniInput{ width: 100%; }
+
     /* Responsive */
-    @media (max-width: 1000px){
+    @media (max-width: 1120px){
       .kpi{ grid-column: span 6; }
       .span6{ grid-column: span 12; }
-      .attentionItem .name{ max-width: 220px; }
-      .bar{ width: 150px; }
+      .span8{ grid-column: span 12; }
+      .span4{ grid-column: span 12; }
+      .attentionItem .name{ max-width: 260px; }
+      .bar{ width: 160px; }
+      .brand{ min-width: 240px; }
+      .modalGrid{ grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -321,7 +496,7 @@
         <div class="logo"></div>
         <div>
           <h1>CSM Sessions Dashboard</h1>
-          <div class="sub">Simple view of sessions, commitments, and overage — by month</div>
+          <div class="sub">Enhanced view of sessions, commitments, overage, actions, and forecasts — by month</div>
         </div>
       </div>
 
@@ -336,6 +511,7 @@
         <label>Billing month</label>
         <select id="period"></select>
       </div>
+
       <div>
         <label>From (optional)</label>
         <input id="from" type="date"/>
@@ -344,59 +520,107 @@
         <label>To (optional)</label>
         <input id="to" type="date"/>
       </div>
+
+      <div>
+        <label>CSM</label>
+        <select id="csmFilter"></select>
+      </div>
+
+      <div>
+        <label>Client</label>
+        <select id="clientFilter"></select>
+      </div>
+
+      <div>
+        <label>Locations (count)</label>
+        <select id="locationsFilter">
+          <option value="all">All</option>
+          <option value="1">1</option>
+          <option value="2-3">2–3</option>
+          <option value="4+">4+</option>
+        </select>
+      </div>
+
+      <div class="toggle" title="Compare KPIs with previous month (or shifted date range if using From/To).">
+        <input id="compareToggle" type="checkbox"/>
+        <span style="font-size:12px; color:var(--muted); font-weight:850;">Compare prev month</span>
+      </div>
+
+      <div class="toggle" title="Only show clients near limit or already over (threshold configurable in Settings).">
+        <input id="atRiskToggle" type="checkbox"/>
+        <span style="font-size:12px; color:var(--muted); font-weight:850;">At risk only</span>
+      </div>
+
+      <div class="toggle" title="Only show clients with overage > 0 minutes.">
+        <input id="overageOnlyToggle" type="checkbox"/>
+        <span style="font-size:12px; color:var(--muted); font-weight:850;">Overage only</span>
+      </div>
+
+      <div class="toggle" title="Advanced: try fetch() + CORS instead of JSONP. Leave off if you’re not sure.">
+        <input id="useFetchToggle" type="checkbox"/>
+        <span style="font-size:12px; color:var(--muted); font-weight:850;">Use fetch</span>
+      </div>
+
       <div class="inline">
         <button id="refreshBtn">Refresh</button>
+        <button id="settingsBtn" class="secondary">Settings</button>
         <button id="exportClientsBtn" class="secondary">Export clients CSV</button>
         <button id="exportSessionsBtn" class="secondary">Export sessions CSV</button>
+        <button id="exportReportBtn" class="secondary" title="Downloads a JSON snapshot of the current (filtered) report.">Export report JSON</button>
       </div>
     </div>
   </div>
 </header>
 
 <div class="wrap">
-  <!-- KPIs -->
   <div class="grid">
+    <!-- KPIs -->
     <div class="card kpi">
-      <div class="t">Total sessions</div>
+      <div class="t"><span>Total sessions</span><span class="delta neutral" id="d_totalSessions">—</span></div>
       <div class="v" id="k_totalSessions"><div class="skeleton"></div></div>
-      <div class="s">How many sessions happened this month</div>
-    </div>
-    <div class="card kpi">
-      <div class="t">Total minutes</div>
-      <div class="v" id="k_totalMinutes"><div class="skeleton"></div></div>
-      <div class="s">Total delivery time</div>
-    </div>
-    <div class="card kpi">
-      <div class="t">Average duration</div>
-      <div class="v" id="k_avg"><div class="skeleton"></div></div>
-      <div class="s">Minutes per session</div>
-    </div>
-    <div class="card kpi">
-      <div class="t">Unique clients</div>
-      <div class="v" id="k_clients"><div class="skeleton"></div></div>
-      <div class="s">Clients active this month</div>
+      <div class="s">How many sessions happened in the current view</div>
     </div>
 
     <div class="card kpi">
-      <div class="t">Committed minutes</div>
-      <div class="v" id="k_committed"><div class="skeleton"></div></div>
-      <div class="s">From “Tab 2” commitments</div>
+      <div class="t"><span>Total minutes</span><span class="delta neutral" id="d_totalMinutes">—</span></div>
+      <div class="v" id="k_totalMinutes"><div class="skeleton"></div></div>
+      <div class="s">Total delivery time in the current view</div>
     </div>
+
     <div class="card kpi">
-      <div class="t">Overage minutes</div>
+      <div class="t"><span>Average duration</span><span class="delta neutral" id="d_avg">—</span></div>
+      <div class="v" id="k_avg"><div class="skeleton"></div></div>
+      <div class="s">Minutes per session (mean)</div>
+    </div>
+
+    <div class="card kpi">
+      <div class="t"><span>Unique clients</span><span class="delta neutral" id="d_clients">—</span></div>
+      <div class="v" id="k_clients"><div class="skeleton"></div></div>
+      <div class="s">Clients active in the current view</div>
+    </div>
+
+    <div class="card kpi">
+      <div class="t"><span>Committed minutes</span><span class="delta neutral" id="d_committed">—</span></div>
+      <div class="v" id="k_committed"><div class="skeleton"></div></div>
+      <div class="s">Sum of commitments for the current client set</div>
+    </div>
+
+    <div class="card kpi">
+      <div class="t"><span>Overage minutes</span><span class="delta neutral" id="d_over">—</span></div>
       <div class="v" id="k_over"><div class="skeleton"></div></div>
       <div class="s">Consumed − committed (min 0)</div>
     </div>
+
     <div class="card kpi">
-      <div class="t">Overage amount</div>
+      <div class="t"><span>Overage amount</span><span class="delta neutral" id="d_over_amt">—</span></div>
       <div class="v" id="k_over_amt"><div class="skeleton"></div></div>
-      <div class="s">Needs a rate/hour column (optional)</div>
+      <div class="s">Uses client rate/hour from Settings (falls back to backend if provided)</div>
     </div>
 
     <div class="card kpi">
-      <div class="t">Friendly tip</div>
-      <div class="v" style="font-size:16px; line-height:1.2;">Use “Needs attention”</div>
-      <div class="s">It highlights clients near or above their committed time.</div>
+      <div class="t"><span>Data quality</span><span class="delta neutral" id="d_quality">—</span></div>
+      <div class="v" id="k_quality" style="font-size:16px; line-height:1.2;"><div class="skeleton"></div></div>
+      <div class="s">Missing briefs, missing CSM, incomplete fields</div>
     </div>
 
     <!-- Charts -->
@@ -404,7 +628,7 @@
       <div class="sectionTitle">
         <div>
           <div class="title">Minutes per day</div>
-          <div class="subtitle">A quick visual to see busy days</div>
+          <div class="subtitle">Busy days in the current view</div>
         </div>
       </div>
       <canvas id="chartDaily" height="120"></canvas>
@@ -414,10 +638,34 @@
       <div class="sectionTitle">
         <div>
           <div class="title">Top clients by minutes</div>
-          <div class="subtitle">Top 10 clients consuming the most time</div>
+          <div class="subtitle">Top 10 consuming the most time (current view)</div>
         </div>
       </div>
       <canvas id="chartTopClients" height="120"></canvas>
+    </div>
+
+    <div class="card span6">
+      <div class="sectionTitle">
+        <div>
+          <div class="title">Burn-down & forecast</div>
+          <div class="subtitle">Cumulative minutes vs committed (simple projection)</div>
+        </div>
+      </div>
+      <canvas id="chartBurndown" height="120"></canvas>
+    </div>
+
+    <div class="card span6">
+      <div class="sectionTitle">
+        <div>
+          <div class="title">Suggested actions</div>
+          <div class="subtitle">Heuristic queue to turn insight into follow-ups</div>
+        </div>
+        <div class="inline">
+          <button id="copyActionsBtn" class="secondary miniBtn" title="Copies a small action summary to your clipboard.">Copy</button>
+        </div>
+      </div>
+      <div id="actionsList" class="actionsList"></div>
+      <div id="actionsEmpty" class="subtitle" style="display:none;">All good — no urgent suggestions in this view.</div>
     </div>
 
     <!-- Needs attention -->
@@ -425,17 +673,17 @@
       <div class="sectionTitle">
         <div>
           <div class="title">Needs attention</div>
-          <div class="subtitle">Clients close to their committed limit (≥80%) or already over (≥100%).</div>
+          <div class="subtitle">Clients close to limit (≥ warn) or already over (≥ bad). Click a client to drill down.</div>
         </div>
         <div class="pill">
-          <span class="dot good"></span><span>&lt; 80%</span>&nbsp;&nbsp;
-          <span class="dot warn"></span><span>80–99%</span>&nbsp;&nbsp;
+          <span class="dot good"></span><span>&lt; warn</span>&nbsp;&nbsp;
+          <span class="dot warn"></span><span>warn–99%</span>&nbsp;&nbsp;
           <span class="dot bad"></span><span>≥ 100%</span>
         </div>
       </div>
       <div id="attentionList" class="attentionList"></div>
       <div id="attentionEmpty" class="subtitle" style="display:none;">
-        🎉 No clients are near the limit right now.
+        🎉 No clients are near the limit right now in this view.
       </div>
     </div>
 
@@ -444,7 +692,7 @@
       <div class="sectionTitle">
         <div>
           <div class="title">Clients</div>
-          <div class="subtitle">Search, sort, and export. Utilization = consumed / committed.</div>
+          <div class="subtitle">Search, sort, export. Rate/hour is editable (saved locally). Click row to open details.</div>
         </div>
         <div class="inline">
           <input id="clientSearch" placeholder="Search by client or CSM…" />
@@ -461,7 +709,7 @@
       <div class="sectionTitle">
         <div>
           <div class="title">Sessions</div>
-          <div class="subtitle">Filtered by month + optional date range. Open the PDF brief when available.</div>
+          <div class="subtitle">Filtered by month + view filters + optional date range. Open the PDF brief when available.</div>
         </div>
         <div class="inline">
           <input id="sessionSearch" placeholder="Search by client, account, CSM, contact…" />
@@ -473,13 +721,156 @@
       </div>
 
       <div id="friendlyError" class="subtitle" style="display:none; margin-top:10px;">
+        <div style="font-weight:900; color:var(--text); margin-bottom:6px;">Couldn’t load data</div>
+        <div id="friendlyErrorDetails"></div>
+        <div class="divider"></div>
         If you see “JSON timeout”, your Web App is probably not returning JSONP.
         Open this link and make sure it starts with <span style="font-family:var(--mono)">TEST(</span>:
         <br/>
         <span style="font-family:var(--mono); color:var(--primary2);" id="jsonpTestLink"></span>
+        <div class="divider"></div>
+        <button id="copyDebugBtn" class="secondary miniBtn">Copy debug info</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Drawer -->
+<div id="drawerBackdrop" class="drawerBackdrop"></div>
+<aside id="drawer" class="drawer" aria-hidden="true">
+  <div class="drawerHeader">
+    <div style="min-width:0;">
+      <div class="drawerTitle" id="drawerTitle">Client</div>
+      <div class="drawerSub" id="drawerSub">—</div>
+    </div>
+    <div class="inline">
+      <button id="drawerCopyBtn" class="secondary miniBtn">Copy summary</button>
+      <button id="drawerCloseBtn" class="secondary miniBtn">Close</button>
+    </div>
+  </div>
+  <div class="drawerBody">
+    <div class="drawerCard">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+        <div>
+          <div style="font-weight:950;">Utilization & overage</div>
+          <div class="help">Committed vs consumed, plus what’s likely by month end.</div>
+        </div>
+        <div class="pill"><span class="dot" id="drawerDot"></span><span id="drawerUtilText">—</span></div>
+      </div>
+      <div class="kv">
+        <div>
+          <div class="k">Committed</div>
+          <div class="val" id="drawerCommitted">—</div>
+        </div>
+        <div>
+          <div class="k">Consumed</div>
+          <div class="val" id="drawerConsumed">—</div>
+        </div>
+        <div>
+          <div class="k">Remaining</div>
+          <div class="val" id="drawerRemaining">—</div>
+        </div>
+        <div>
+          <div class="k">Overage</div>
+          <div class="val" id="drawerOverage">—</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <canvas id="chartClientTrend" height="120"></canvas>
+    </div>
+
+    <div class="drawerCard">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+        <div>
+          <div style="font-weight:950;">Follow-up helpers</div>
+          <div class="help">Shortcuts for working faster.</div>
+        </div>
+        <div class="inline">
+          <button id="drawerFocusBtn" class="secondary miniBtn" title="Filter tables to this client.">Focus tables</button>
+          <button id="drawerClearFocusBtn" class="secondary miniBtn" title="Clear client focus.">Clear focus</button>
+        </div>
+      </div>
+      <div class="listSmall" id="drawerHints"></div>
+    </div>
+
+    <div class="drawerCard">
+      <div style="font-weight:950;">Recent sessions</div>
+      <div class="help">Last 5 sessions in the current view.</div>
+      <div class="listSmall" id="drawerSessions"></div>
+    </div>
+  </div>
+</aside>
+
+<!-- Settings modal -->
+<div id="modalBackdrop" class="modalBackdrop"></div>
+<div id="settingsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+  <div class="modalHeader">
+    <div>
+      <div class="drawerTitle" id="settingsTitle">Settings</div>
+      <div class="drawerSub">These are saved locally in your browser (localStorage).</div>
+    </div>
+    <div class="inline">
+      <button id="resetSettingsBtn" class="secondary miniBtn" title="Resets thresholds and alert settings (keeps rates).">Reset</button>
+      <button id="closeSettingsBtn" class="secondary miniBtn">Close</button>
+    </div>
+  </div>
+  <div class="modalBody">
+    <div class="modalGrid">
+      <div class="drawerCard">
+        <div style="font-weight:950;">Attention thresholds</div>
+        <div class="help">Clients are “at risk” when utilization ≥ warn. “Bad” is ≥ 100%.</div>
+        <div style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+          <div>
+            <label>Warn threshold</label>
+            <input id="warnThreshold" class="miniInput" type="number" min="0" max="0.99" step="0.01" placeholder="0.80"/>
+          </div>
+          <div>
+            <label>Action threshold</label>
+            <input id="actionThreshold" class="miniInput" type="number" min="0" max="1.50" step="0.01" placeholder="0.92"/>
+          </div>
+        </div>
+        <div class="help">Tip: action threshold is where you want to start proactive outreach (default 0.92).</div>
+      </div>
+
+      <div class="drawerCard">
+        <div style="font-weight:950;">Forecast settings</div>
+        <div class="help">Used for projection lines and action heuristics.</div>
+        <div style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+          <div>
+            <label>Forecast window (days)</label>
+            <input id="forecastWindow" class="miniInput" type="number" min="3" max="21" step="1" placeholder="7"/>
+          </div>
+          <div>
+            <label>Cap projection (%)</label>
+            <input id="forecastCap" class="miniInput" type="number" min="110" max="200" step="5" placeholder="140"/>
+          </div>
+        </div>
+      </div>
+
+      <div class="drawerCard">
+        <div style="font-weight:950;">Alerts</div>
+        <div class="help">Optional: browser notifications when a client crosses a threshold (requires permission).</div>
+        <div style="margin-top:10px;" class="inline">
+          <button id="enableAlertsBtn" class="secondary miniBtn">Enable notifications</button>
+          <div class="pill"><span class="dot" id="alertsDot"></span><span id="alertsText">Disabled</span></div>
+        </div>
+        <div class="help">Alerts trigger on refresh if a client crosses warn/action/100% compared to last refresh.</div>
+      </div>
+
+      <div class="drawerCard">
+        <div style="font-weight:950;">Rates / hour (per client)</div>
+        <div class="help">You can edit rate/hour directly in the Clients table. This section just helps you clear them.</div>
+        <div style="margin-top:10px;" class="inline">
+          <button id="clearRatesBtn" class="secondary miniBtn">Clear all rates</button>
+          <button id="downloadRatesBtn" class="secondary miniBtn">Download rates JSON</button>
+        </div>
+        <div class="help">Rates are stored locally under <span style="font-family:var(--mono)">csmDashRates</span>.</div>
       </div>
     </div>
 
+    <div style="margin-top:12px; display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap;">
+      <button id="saveSettingsBtn">Save settings</button>
+    </div>
   </div>
 </div>
 
@@ -493,9 +884,20 @@
     period: document.getElementById("period"),
     from: document.getElementById("from"),
     to: document.getElementById("to"),
+    csmFilter: document.getElementById("csmFilter"),
+    clientFilter: document.getElementById("clientFilter"),
+    locationsFilter: document.getElementById("locationsFilter"),
+
+    compareToggle: document.getElementById("compareToggle"),
+    atRiskToggle: document.getElementById("atRiskToggle"),
+    overageOnlyToggle: document.getElementById("overageOnlyToggle"),
+    useFetchToggle: document.getElementById("useFetchToggle"),
+
     refreshBtn: document.getElementById("refreshBtn"),
+    settingsBtn: document.getElementById("settingsBtn"),
     exportClientsBtn: document.getElementById("exportClientsBtn"),
     exportSessionsBtn: document.getElementById("exportSessionsBtn"),
+    exportReportBtn: document.getElementById("exportReportBtn"),
 
     connectionPill: document.getElementById("connectionPill"),
     connDot: document.getElementById("connDot"),
@@ -509,9 +911,23 @@
     k_committed: document.getElementById("k_committed"),
     k_over: document.getElementById("k_over"),
     k_over_amt: document.getElementById("k_over_amt"),
+    k_quality: document.getElementById("k_quality"),
+
+    d_totalSessions: document.getElementById("d_totalSessions"),
+    d_totalMinutes: document.getElementById("d_totalMinutes"),
+    d_avg: document.getElementById("d_avg"),
+    d_clients: document.getElementById("d_clients"),
+    d_committed: document.getElementById("d_committed"),
+    d_over: document.getElementById("d_over"),
+    d_over_amt: document.getElementById("d_over_amt"),
+    d_quality: document.getElementById("d_quality"),
 
     attentionList: document.getElementById("attentionList"),
     attentionEmpty: document.getElementById("attentionEmpty"),
+
+    actionsList: document.getElementById("actionsList"),
+    actionsEmpty: document.getElementById("actionsEmpty"),
+    copyActionsBtn: document.getElementById("copyActionsBtn"),
 
     clientSearch: document.getElementById("clientSearch"),
     sessionSearch: document.getElementById("sessionSearch"),
@@ -519,25 +935,168 @@
     clearSessionSearch: document.getElementById("clearSessionSearch"),
 
     friendlyError: document.getElementById("friendlyError"),
+    friendlyErrorDetails: document.getElementById("friendlyErrorDetails"),
     jsonpTestLink: document.getElementById("jsonpTestLink"),
+    copyDebugBtn: document.getElementById("copyDebugBtn"),
+
+    drawerBackdrop: document.getElementById("drawerBackdrop"),
+    drawer: document.getElementById("drawer"),
+    drawerCloseBtn: document.getElementById("drawerCloseBtn"),
+    drawerTitle: document.getElementById("drawerTitle"),
+    drawerSub: document.getElementById("drawerSub"),
+    drawerDot: document.getElementById("drawerDot"),
+    drawerUtilText: document.getElementById("drawerUtilText"),
+    drawerCommitted: document.getElementById("drawerCommitted"),
+    drawerConsumed: document.getElementById("drawerConsumed"),
+    drawerRemaining: document.getElementById("drawerRemaining"),
+    drawerOverage: document.getElementById("drawerOverage"),
+    drawerSessions: document.getElementById("drawerSessions"),
+    drawerHints: document.getElementById("drawerHints"),
+    drawerCopyBtn: document.getElementById("drawerCopyBtn"),
+    drawerFocusBtn: document.getElementById("drawerFocusBtn"),
+    drawerClearFocusBtn: document.getElementById("drawerClearFocusBtn"),
+
+    modalBackdrop: document.getElementById("modalBackdrop"),
+    settingsModal: document.getElementById("settingsModal"),
+    closeSettingsBtn: document.getElementById("closeSettingsBtn"),
+    saveSettingsBtn: document.getElementById("saveSettingsBtn"),
+    resetSettingsBtn: document.getElementById("resetSettingsBtn"),
+    warnThreshold: document.getElementById("warnThreshold"),
+    actionThreshold: document.getElementById("actionThreshold"),
+    forecastWindow: document.getElementById("forecastWindow"),
+    forecastCap: document.getElementById("forecastCap"),
+    enableAlertsBtn: document.getElementById("enableAlertsBtn"),
+    alertsDot: document.getElementById("alertsDot"),
+    alertsText: document.getElementById("alertsText"),
+    clearRatesBtn: document.getElementById("clearRatesBtn"),
+    downloadRatesBtn: document.getElementById("downloadRatesBtn"),
   };
 
-  let charts = { daily: null, topClients: null };
+  let charts = { daily: null, topClients: null, burndown: null, clientTrend: null };
   let tables = { clients: null, sessions: null };
-  let state = { summary: null, clients: [], sessions: [] };
 
-  const fmtInt = (n)=> (n ?? 0).toLocaleString();
-  const fmt1 = (n)=> (n ?? 0).toLocaleString(undefined,{maximumFractionDigits:1});
-  const fmt2 = (n)=> (n ?? 0).toLocaleString(undefined,{maximumFractionDigits:2});
+  // Raw state from API
+  let state = {
+    periods: [],
+    rawSummary: null,
+    rawSessions: [],
+    prevSummary: null,
+    prevSessions: [],
+    lastDebug: null,
+    focusClient: null,
+  };
+
+  // Local config
+  const LS = {
+    settings: "csmDashSettings_v1",
+    rates: "csmDashRates",
+    alertSnapshot: "csmDashAlertSnapshot_v1",
+  };
+
+  const defaultSettings = {
+    warnThreshold: 0.80,
+    actionThreshold: 0.92,
+    forecastWindowDays: 7,
+    forecastCapPct: 140,
+    alertsEnabled: false,
+  };
+
+  function loadSettings(){
+    try{
+      const s = JSON.parse(localStorage.getItem(LS.settings) || "null");
+      return {...defaultSettings, ...(s||{})};
+    }catch(e){
+      return {...defaultSettings};
+    }
+  }
+  function saveSettings(partial){
+    const cur = loadSettings();
+    const next = {...cur, ...partial};
+    localStorage.setItem(LS.settings, JSON.stringify(next));
+    return next;
+  }
+  function loadRates(){
+    try{ return JSON.parse(localStorage.getItem(LS.rates) || "{}"); }
+    catch(e){ return {}; }
+  }
+  function saveRates(rates){
+    localStorage.setItem(LS.rates, JSON.stringify(rates || {}));
+  }
+
+  let SETTINGS = loadSettings();
+
+  // Formatting
+  const fmtInt = (n)=> (Number.isFinite(n) ? n : 0).toLocaleString();
+  const fmt1 = (n)=> (Number.isFinite(n) ? n : 0).toLocaleString(undefined,{maximumFractionDigits:1});
+  const fmt2 = (n)=> (Number.isFinite(n) ? n : 0).toLocaleString(undefined,{maximumFractionDigits:2});
   const fmtPct = (x)=> (x==null ? "—" : (x*100).toFixed(1) + "%");
+
+  function fmtCurrency(amount, currency){
+    if (!Number.isFinite(amount)) return "—";
+    try{
+      return amount.toLocaleString(undefined, { style:"currency", currency: currency || "EUR", maximumFractionDigits: 2 });
+    }catch(e){
+      return (currency || "") + " " + fmt2(amount);
+    }
+  }
 
   function todayPeriod(){
     const d = new Date();
     return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");
   }
 
+  function parsePeriod(period){
+    const [y,m] = String(period||"").split("-").map(x=>parseInt(x,10));
+    if (!y || !m) return null;
+    return { y, m };
+  }
+
+  function startEndOfPeriod(period){
+    const p = parsePeriod(period);
+    if(!p) return null;
+    const start = new Date(p.y, p.m-1, 1);
+    const end = new Date(p.y, p.m, 0); // last day
+    return { start, end };
+  }
+
+  function isoDate(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    const day = String(d.getDate()).padStart(2,"0");
+    return `${y}-${m}-${day}`;
+  }
+
+  function addMonths(period, delta){
+    const p = parsePeriod(period);
+    if(!p) return period;
+    const base = new Date(p.y, p.m-1, 1);
+    base.setMonth(base.getMonth() + delta);
+    return `${base.getFullYear()}-${String(base.getMonth()+1).padStart(2,"0")}`;
+  }
+
+  function clampDateToPeriod(dateIso, period){
+    const se = startEndOfPeriod(period);
+    if(!se) return dateIso;
+    const d = new Date(dateIso+"T00:00:00");
+    if (d < se.start) return isoDate(se.start);
+    if (d > se.end) return isoDate(se.end);
+    return isoDate(d);
+  }
+
+  function shiftDateIsoByMonths(dateIso, deltaMonths){
+    if(!dateIso) return "";
+    const d = new Date(dateIso+"T00:00:00");
+    const day = d.getDate();
+    d.setMonth(d.getMonth() + deltaMonths);
+
+    // handle month shorter (e.g. 31 -> 30)
+    if (d.getDate() !== day){
+      d.setDate(0);
+    }
+    return isoDate(d);
+  }
+
   function setConnection(stateName, message){
-    // stateName: "ok" | "warn" | "bad"
     els.connDot.className = "dot " + (stateName === "ok" ? "good" : stateName === "warn" ? "warn" : "bad");
     els.connText.textContent = message;
   }
@@ -546,12 +1105,43 @@
     el.textContent = value;
   }
 
+  function setDelta(el, deltaValue, isPct=false){
+    // deltaValue: number (current - prev)
+    if (deltaValue == null || !Number.isFinite(deltaValue)){
+      el.className = "delta neutral";
+      el.textContent = "—";
+      return;
+    }
+    const sign = deltaValue > 0 ? "+" : "";
+    const text = isPct
+      ? `${sign}${deltaValue.toFixed(1)}%`
+      : `${sign}${deltaValue.toLocaleString()}`;
+
+    if (deltaValue > 0){
+      el.className = "delta up";
+    } else if (deltaValue < 0){
+      el.className = "delta down";
+    } else {
+      el.className = "delta neutral";
+    }
+    el.textContent = text;
+  }
+
+  function utilClass(util){
+    if (util == null) return "good";
+    if (util >= 1.0) return "bad";
+    if (util >= SETTINGS.warnThreshold) return "warn";
+    return "good";
+  }
+
+  /*********************************************************
+   * Data fetching: JSONP + optional fetch()
+   *********************************************************/
   function jsonp(url){
     return new Promise((resolve, reject) => {
       const cb = "cb_" + Math.random().toString(36).slice(2);
       const s = document.createElement("script");
       const sep = url.includes("?") ? "&" : "?";
-      // cache-buster
       s.src = url + sep + "__ts=" + Date.now() + "&callback=" + cb;
       s.async = true;
 
@@ -570,85 +1160,502 @@
     });
   }
 
-  async function loadPeriods(){
-    const res = await jsonp(API_URL + "?action=periods");
-    if (!res.ok) throw new Error(res.error || "Could not load periods");
+  async function getJSON(url){
+    const r = await fetch(url, { cache: "no-store" });
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    const data = await r.json();
+    return data;
+  }
 
-    const periods = res.periods || [];
-    els.period.innerHTML = "";
-    periods.forEach(p => {
-      const opt = document.createElement("option");
-      opt.value = p;
-      opt.textContent = p;
-      els.period.appendChild(opt);
+  async function apiCall(url){
+    if (els.useFetchToggle.checked){
+      return await getJSON(url);
+    }
+    return await jsonp(url);
+  }
+
+  /*********************************************************
+   * Build derived view data (filters, aggregations)
+   *********************************************************/
+  function normalizeStr(s){ return String(s ?? "").trim(); }
+
+  function buildMetaFromSummary(summary){
+    const meta = new Map(); // client -> meta
+    (summary?.clients || []).forEach(c=>{
+      const name = normalizeStr(c.client);
+      if(!name) return;
+      meta.set(name, {
+        client: name,
+        locations: Number(c.locations ?? 0),
+        committedMinutes: Number(c.committedMinutes ?? 0),
+        primaryCsm: normalizeStr(c.primaryCsm || ""),
+        currency: normalizeStr(c.currency || ""),
+        backendOverageAmount: Number(c.overageAmount ?? NaN),
+      });
     });
-    els.period.value = periods[0] || todayPeriod();
+    return meta;
   }
 
-  async function refreshAll(){
-    els.friendlyError.style.display = "none";
-
-    const period = els.period.value || todayPeriod();
-    const from = els.from.value;
-    const to = els.to.value;
-
-    setConnection("warn", "Loading data…");
-
-    const summaryP = jsonp(API_URL + `?action=summary&period=${encodeURIComponent(period)}`);
-    const sessionsUrl = API_URL + `?action=sessions&period=${encodeURIComponent(period)}`
-      + (from ? `&from=${encodeURIComponent(from)}` : "")
-      + (to ? `&to=${encodeURIComponent(to)}` : "");
-    const sessionsP = jsonp(sessionsUrl);
-
-    const [summary, sessionsRes] = await Promise.all([summaryP, sessionsP]);
-    if (!summary.ok) throw new Error(summary.error || "Summary error");
-    if (!sessionsRes.ok) throw new Error(sessionsRes.error || "Sessions error");
-
-    state.summary = summary;
-    state.clients = summary.clients || [];
-    state.sessions = sessionsRes.sessions || [];
-
-    renderKPIs();
-    renderAttention();
-    renderCharts();
-    renderTables();
-
-    const now = new Date();
-    els.lastRefreshed.textContent = "Last refreshed: " + now.toLocaleString();
-    setConnection("ok", "Connected");
+  function filterByLocationsCount(locCount, mode){
+    if (mode === "all") return true;
+    const n = Number(locCount ?? 0);
+    if (mode === "1") return n === 1;
+    if (mode === "2-3") return n >= 2 && n <= 3;
+    if (mode === "4+") return n >= 4;
+    return true;
   }
 
-  function renderKPIs(){
-    const t = state.summary?.totals || {};
+  function buildViewData(){
+    const summary = state.rawSummary;
+    const sessionsRaw = state.rawSessions || [];
+    const meta = buildMetaFromSummary(summary);
+
+    const filter = {
+      period: els.period.value || todayPeriod(),
+      from: els.from.value || "",
+      to: els.to.value || "",
+      csm: els.csmFilter.value || "all",
+      client: els.clientFilter.value || "all",
+      locationsMode: els.locationsFilter.value || "all",
+      atRiskOnly: els.atRiskToggle.checked,
+      overageOnly: els.overageOnlyToggle.checked,
+      focusClient: state.focusClient || null,
+    };
+
+    const filteredSessions = sessionsRaw
+      .map(s => ({
+        date: normalizeStr(s.date),
+        client: normalizeStr(s.client),
+        account: normalizeStr(s.account),
+        csm: normalizeStr(s.csm),
+        durationMinutes: Number(s.durationMinutes ?? 0),
+        attendees: Number(s.attendees ?? 0),
+        mainContact: normalizeStr(s.mainContact),
+        briefUrl: normalizeStr(s.briefUrl),
+        notes: normalizeStr(s.notes),
+      }))
+      .filter(s => s.client)
+      .filter(s => {
+        // date range filter
+        if (filter.from && s.date && s.date < filter.from) return false;
+        if (filter.to && s.date && s.date > filter.to) return false;
+
+        // focus client
+        if (filter.focusClient && s.client !== filter.focusClient) return false;
+
+        // client filter
+        if (filter.client !== "all" && s.client !== filter.client) return false;
+
+        // csm filter (by session csm)
+        if (filter.csm !== "all" && s.csm !== filter.csm) return false;
+
+        // locations filter (by client meta)
+        const m = meta.get(s.client);
+        const locCount = m?.locations ?? 0;
+        if (!filterByLocationsCount(locCount, filter.locationsMode)) return false;
+
+        return true;
+      });
+
+    // Aggregate sessions -> client usage
+    const byClient = new Map();
+    for (const s of filteredSessions){
+      const k = s.client;
+      if(!byClient.has(k)){
+        byClient.set(k, { client: k, consumedMinutes: 0, sessionsCount: 0, lastSessionDate: "", accounts: new Set(), csms: new Set(), briefsMissing: 0 });
+      }
+      const row = byClient.get(k);
+      row.consumedMinutes += Number(s.durationMinutes || 0);
+      row.sessionsCount += 1;
+      row.accounts.add(s.account || "");
+      row.csms.add(s.csm || "");
+      if (!s.briefUrl) row.briefsMissing += 1;
+      if (s.date && (!row.lastSessionDate || s.date > row.lastSessionDate)) row.lastSessionDate = s.date;
+    }
+
+    // Rates map
+    const rates = loadRates();
+
+    // Build clients view list:
+    const clients = Array.from(new Set([
+      ...Array.from(meta.keys()),
+      ...Array.from(byClient.keys()),
+    ])).map(name=>{
+      const m = meta.get(name) || { client:name, committedMinutes:0, primaryCsm:"", locations:0, currency:"" };
+      const u = byClient.get(name) || { consumedMinutes:0, sessionsCount:0, lastSessionDate:"", briefsMissing:0, accounts:new Set(), csms:new Set() };
+      const committed = Number(m.committedMinutes || 0);
+      const consumed = Number(u.consumedMinutes || 0);
+      const utilization = (committed > 0 ? (consumed / committed) : null);
+      const overageMinutes = Math.max(consumed - committed, 0);
+      const remaining = Math.max(committed - consumed, 0);
+
+      const rateInfo = rates[name] || {};
+      const ratePerHour = Number(rateInfo.ratePerHour ?? NaN);
+      const currency = normalizeStr(rateInfo.currency || m.currency || "EUR");
+
+      let overageAmount = NaN;
+      // if backend gave a number, use it unless user has rate
+      if (Number.isFinite(ratePerHour)){
+        overageAmount = (overageMinutes / 60) * ratePerHour;
+      } else if (Number.isFinite(m.backendOverageAmount)){
+        overageAmount = m.backendOverageAmount;
+      }
+
+      const primaryCsm = m.primaryCsm || (Array.from(u.csms).filter(Boolean)[0] || "");
+
+      return {
+        client: name,
+        locations: Number(m.locations || 0),
+        committedMinutes: committed,
+        consumedMinutes: consumed,
+        utilization,
+        overageMinutes,
+        remainingMinutes: remaining,
+        sessionsCount: Number(u.sessionsCount || 0),
+        lastSessionDate: u.lastSessionDate || "",
+        primaryCsm,
+        briefsMissing: Number(u.briefsMissing || 0),
+        ratePerHour: Number.isFinite(ratePerHour) ? ratePerHour : null,
+        currency: currency || "EUR",
+        overageAmount: Number.isFinite(overageAmount) ? overageAmount : null,
+      };
+    }).filter(c=>{
+      // Apply client-level filters that depend on utilization/overage:
+      if (filter.focusClient && c.client !== filter.focusClient) return false;
+      if (filter.client !== "all" && c.client !== filter.client) return false;
+
+      // csm filter (by primary CSM)
+      if (filter.csm !== "all" && normalizeStr(c.primaryCsm) !== filter.csm) return false;
+
+      // locations filter
+      if (!filterByLocationsCount(c.locations, filter.locationsMode)) return false;
+
+      if (filter.overageOnly && c.overageMinutes <= 0) return false;
+      if (filter.atRiskOnly && !(c.utilization != null && c.utilization >= SETTINGS.warnThreshold)) return false;
+
+      // Only show clients relevant to this view (either have commitment or usage)
+      if ((c.committedMinutes || 0) <= 0 && (c.consumedMinutes || 0) <= 0) return false;
+
+      return true;
+    });
+
+    // If user toggled overage/at-risk, keep sessions aligned to those clients
+    const allowedClients = new Set(clients.map(x=>x.client));
+    const sessions = filteredSessions.filter(s => allowedClients.has(s.client));
+
+    // Compute daily minutes from sessions
+    const dailyMap = new Map();
+    for (const s of sessions){
+      const d = s.date || "";
+      if (!d) continue;
+      dailyMap.set(d, (dailyMap.get(d) || 0) + (Number(s.durationMinutes||0)));
+    }
+    const daily = Array.from(dailyMap.entries())
+      .map(([date, minutes])=>({date, minutes}))
+      .sort((a,b)=> a.date.localeCompare(b.date));
+
+    // Totals
+    const totalMinutes = clients.reduce((sum,c)=> sum + (c.consumedMinutes||0), 0);
+    const totalSessions = sessions.length;
+    const avgDuration = totalSessions ? (totalMinutes / totalSessions) : 0;
+    const uniqueClients = new Set(sessions.map(s=>s.client)).size || clients.filter(c=>c.consumedMinutes>0).length;
+    const totalCommitted = clients.reduce((sum,c)=> sum + (c.committedMinutes||0), 0);
+    const totalOverage = clients.reduce((sum,c)=> sum + (c.overageMinutes||0), 0);
+
+    // Overage amount totals: group by currency (avoid mixing misleadingly)
+    const amountByCurrency = new Map();
+    for (const c of clients){
+      if (!Number.isFinite(c.overageAmount)) continue;
+      const cur = c.currency || "EUR";
+      amountByCurrency.set(cur, (amountByCurrency.get(cur) || 0) + c.overageAmount);
+    }
+
+    // Data quality KPI
+    const missingBriefs = sessions.filter(s=>!s.briefUrl).length;
+    const missingCsm = sessions.filter(s=>!s.csm).length;
+    const missingClient = sessions.filter(s=>!s.client).length;
+    const qualityScore = computeQualityScore({ sessionsCount: sessions.length, missingBriefs, missingCsm, missingClient });
+
+    // Forecast and burndown
+    const forecast = buildForecast(filter.period, daily, totalCommitted);
+
+    // Actions queue
+    const actions = buildActions(clients, forecast, filter);
+
+    return {
+      filter,
+      meta,
+      clients,
+      sessions,
+      daily,
+      totals: {
+        totalMinutes,
+        totalSessions,
+        avgDuration,
+        uniqueClients,
+        totalCommitted,
+        totalOverage,
+        amountByCurrency,
+        qualityScore,
+        qualityDetail: { missingBriefs, missingCsm, missingClient },
+      },
+      forecast,
+      actions,
+    };
+  }
+
+  function computeQualityScore({ sessionsCount, missingBriefs, missingCsm, missingClient }){
+    if (!sessionsCount) return { label: "—", pct: null };
+    const penalty = (missingBriefs * 1.0) + (missingCsm * 1.5) + (missingClient * 2.0);
+    const maxPenalty = sessionsCount * 2.0;
+    const pct = Math.max(0, 1 - (penalty / maxPenalty));
+    const label = pct >= 0.9 ? "Good" : pct >= 0.75 ? "OK" : "Needs work";
+    return { label, pct };
+  }
+
+  function buildForecast(period, daily, totalCommitted){
+    const se = startEndOfPeriod(period);
+    if(!se) return { capPct: SETTINGS.forecastCapPct, series: [] };
+
+    // Determine "as of" date:
+    const today = new Date();
+    const periodEnd = se.end;
+    const asOf = (today < periodEnd ? today : periodEnd);
+
+    // Build cumulative actual across the month (including zeros for days without sessions)
+    const days = [];
+    const cur = new Date(se.start);
+    while (cur <= se.end){
+      days.push(isoDate(cur));
+      cur.setDate(cur.getDate()+1);
+    }
+
+    const map = new Map(daily.map(d=>[d.date, Number(d.minutes||0)]));
+    const actual = [];
+    let cum = 0;
+    for (const d of days){
+      cum += (map.get(d) || 0);
+      actual.push({ date:d, cumMinutes: cum });
+    }
+
+    // Forecast using last N days that have passed (within the month)
+    const window = Math.max(3, Math.min(21, Number(SETTINGS.forecastWindowDays || 7)));
+    const asOfIso = isoDate(asOf);
+    const pastDays = actual.filter(x=> x.date <= asOfIso);
+    const recent = pastDays.slice(-window);
+    const recentDelta = recent.length ? (recent[recent.length-1].cumMinutes - (recent[0]?.cumMinutes ?? 0)) : 0;
+    const denomDays = Math.max(1, recent.length-1);
+    const runRatePerDay = recentDelta / denomDays; // minutes/day
+    const projected = [];
+    const cap = SETTINGS.forecastCapPct || 140;
+
+    for (const p of actual){
+      let proj = p.cumMinutes;
+      if (p.date > asOfIso){
+        const idxAsOf = pastDays.length ? pastDays[pastDays.length-1].cumMinutes : 0;
+        const daysAhead = daysBetween(asOfIso, p.date);
+        proj = idxAsOf + Math.max(0, runRatePerDay) * daysAhead;
+      }
+      // cap projection to avoid crazy line
+      const capValue = totalCommitted ? (totalCommitted * (cap/100)) : (proj);
+      if (Number.isFinite(capValue)) proj = Math.min(proj, capValue);
+      projected.push({ date: p.date, projectedCumMinutes: proj });
+    }
+
+    const endActual = actual.length ? actual[actual.length-1].cumMinutes : 0;
+    const endProjected = projected.length ? projected[projected.length-1].projectedCumMinutes : 0;
+
+    return {
+      capPct: cap,
+      asOfIso,
+      runRatePerDay,
+      totalCommitted,
+      endActual,
+      endProjected,
+      series: { days, actual, projected }
+    };
+  }
+
+  function daysBetween(isoA, isoB){
+    const a = new Date(isoA+"T00:00:00");
+    const b = new Date(isoB+"T00:00:00");
+    return Math.round((b - a) / (24*3600*1000));
+  }
+
+  function buildActions(clients, forecast, filter){
+    const actions = [];
+
+    const actionThresh = Number(SETTINGS.actionThreshold || 0.92);
+    const warnThresh = Number(SETTINGS.warnThreshold || 0.80);
+
+    // Sort by "risk"
+    const sorted = [...clients].sort((a,b)=>{
+      const au = a.utilization ?? -1;
+      const bu = b.utilization ?? -1;
+      return bu - au;
+    });
+
+    for (const c of sorted){
+      if ((c.committedMinutes || 0) <= 0) continue;
+      const util = c.utilization ?? 0;
+      const over = c.overageMinutes || 0;
+      const remaining = c.remainingMinutes || 0;
+      const last = c.lastSessionDate || "—";
+
+      // Determine projected utilization at month end (simple):
+      // Use global forecast endProjected proportionally by client's share of minutes (rough), OR compute per-client from sessions in drawer.
+      // We'll keep it simple: base on current utilization and global run rate heuristic.
+      const projNote = (forecast?.runRatePerDay > 0 && forecast?.asOfIso)
+        ? `Run-rate ~${fmt1(forecast.runRatePerDay)} min/day (view).`
+        : `Run-rate unavailable.`;
+
+      if (util >= 1.0){
+        actions.push({
+          kind: "over",
+          title: `${c.client} is over committed time`,
+          sub: `${fmtInt(c.consumedMinutes)} / ${fmtInt(c.committedMinutes)} minutes (${fmtPct(util)}). Last: ${last}.`,
+          client: c.client,
+          suggestion: "Send overage notice + propose add-on minutes/package.",
+          extra: projNote
+        });
+      } else if (util >= actionThresh){
+        actions.push({
+          kind: "action",
+          title: `${c.client} is likely to hit the limit soon`,
+          sub: `${fmtInt(c.consumedMinutes)} / ${fmtInt(c.committedMinutes)} minutes (${fmtPct(util)}). Remaining ${fmtInt(remaining)} min. Last: ${last}.`,
+          client: c.client,
+          suggestion: "Proactively align on expectations + confirm remaining scope.",
+          extra: projNote
+        });
+      } else if (util >= warnThresh){
+        actions.push({
+          kind: "warn",
+          title: `${c.client} is approaching the limit`,
+          sub: `${fmtInt(c.consumedMinutes)} / ${fmtInt(c.committedMinutes)} minutes (${fmtPct(util)}). Remaining ${fmtInt(remaining)} min.`,
+          client: c.client,
+          suggestion: "Flag internally; watch next sessions for scope creep.",
+          extra: projNote
+        });
+      }
+    }
+
+    // Add no-activity check: clients with commitment but no sessions in view
+    const se = startEndOfPeriod(filter.period);
+    const endIso = se ? isoDate(se.end) : "";
+    const startIso = se ? isoDate(se.start) : "";
+    const cutoffDays = 21;
+
+    for (const c of clients){
+      if ((c.committedMinutes || 0) <= 0) continue;
+      if ((c.consumedMinutes || 0) > 0) continue;
+      actions.push({
+        kind: "quiet",
+        title: `${c.client} has committed time but no sessions`,
+        sub: `Committed ${fmtInt(c.committedMinutes)} minutes. No sessions recorded in this view.`,
+        client: c.client,
+        suggestion: "Check-in: schedule sessions or confirm delivery plan.",
+        extra: `Period: ${startIso} → ${endIso}`
+      });
+    }
+
+    // Keep top 10
+    return actions.slice(0, 10);
+  }
+
+  /*********************************************************
+   * Rendering
+   *********************************************************/
+  function renderAll(view, compare){
+    renderKPIs(view, compare);
+    renderAttention(view);
+    renderActions(view);
+    renderCharts(view);
+    renderTables(view);
+    maybeNotifyAlerts(view);
+  }
+
+  function renderKPIs(view, compare){
+    const t = view.totals;
     setKPI(els.k_totalSessions, fmtInt(t.totalSessions));
     setKPI(els.k_totalMinutes, fmtInt(t.totalMinutes));
-    setKPI(els.k_avg, fmt1(t.avgDurationMinutes));
+    setKPI(els.k_avg, fmt1(t.avgDuration));
     setKPI(els.k_clients, fmtInt(t.uniqueClients));
-    setKPI(els.k_committed, fmtInt(t.totalCommittedMinutes));
-    setKPI(els.k_over, fmtInt(t.totalOverageMinutes));
-    setKPI(els.k_over_amt, fmt2(t.totalOverageAmount));
+    setKPI(els.k_committed, fmtInt(t.totalCommitted));
+    setKPI(els.k_over, fmtInt(t.totalOverage));
+
+    // Overage amount: show grouped by currency
+    const curEntries = Array.from(t.amountByCurrency.entries());
+    let amtText = "—";
+    if (curEntries.length === 1){
+      const [cur, amt] = curEntries[0];
+      amtText = fmtCurrency(amt, cur);
+    } else if (curEntries.length > 1){
+      // show short
+      amtText = curEntries
+        .slice(0,3)
+        .map(([cur,amt]) => `${cur} ${fmt2(amt)}`)
+        .join(" + ");
+      if (curEntries.length > 3) amtText += " + …";
+    }
+    setKPI(els.k_over_amt, amtText);
+
+    // Data quality
+    if (t.qualityScore.pct == null){
+      setKPI(els.k_quality, "—");
+      setDelta(els.d_quality, null);
+    } else {
+      const pct = (t.qualityScore.pct * 100);
+      setKPI(els.k_quality, `${t.qualityScore.label} · ${pct.toFixed(0)}%`);
+      // delta for quality comes from compare if enabled (computed below)
+    }
+
+    // Deltas
+    if (!compare){
+      [els.d_totalSessions, els.d_totalMinutes, els.d_avg, els.d_clients, els.d_committed, els.d_over, els.d_over_amt, els.d_quality].forEach(x=>{
+        x.className = "delta neutral";
+        x.textContent = "—";
+      });
+      return;
+    }
+
+    setDelta(els.d_totalSessions, (view.totals.totalSessions - compare.totals.totalSessions));
+    setDelta(els.d_totalMinutes, (view.totals.totalMinutes - compare.totals.totalMinutes));
+    setDelta(els.d_avg, (view.totals.avgDuration - compare.totals.avgDuration));
+    setDelta(els.d_clients, (view.totals.uniqueClients - compare.totals.uniqueClients));
+    setDelta(els.d_committed, (view.totals.totalCommitted - compare.totals.totalCommitted));
+    setDelta(els.d_over, (view.totals.totalOverage - compare.totals.totalOverage));
+
+    // Overage amount delta: only if both single currency and same currency
+    const a1 = Array.from(view.totals.amountByCurrency.entries());
+    const a2 = Array.from(compare.totals.amountByCurrency.entries());
+    if (a1.length===1 && a2.length===1 && a1[0][0]===a2[0][0]){
+      setDelta(els.d_over_amt, (a1[0][1] - a2[0][1]));
+    } else {
+      els.d_over_amt.className="delta neutral";
+      els.d_over_amt.textContent="Mixed";
+    }
+
+    // Quality delta
+    if (view.totals.qualityScore.pct != null && compare.totals.qualityScore.pct != null){
+      setDelta(els.d_quality, (view.totals.qualityScore.pct - compare.totals.qualityScore.pct)*100, true);
+    } else {
+      setDelta(els.d_quality, null);
+    }
   }
 
-  function utilClass(util){
-    if (util == null) return "good";
-    if (util >= 1.0) return "bad";
-    if (util >= 0.8) return "warn";
-    return "good";
-  }
-
-  function renderAttention(){
-    const clients = [...(state.clients || [])]
-      .filter(c => c.utilization != null && c.committedMinutes > 0)
+  function renderAttention(view){
+    const clients = [...(view.clients || [])]
+      .filter(c => c.utilization != null && (c.committedMinutes||0) > 0)
       .sort((a,b) => (b.utilization - a.utilization))
-      .filter(c => c.utilization >= 0.8)
-      .slice(0, 8);
+      .filter(c => c.utilization >= SETTINGS.warnThreshold)
+      .slice(0, 10);
 
     els.attentionList.innerHTML = "";
     els.attentionEmpty.style.display = clients.length ? "none" : "block";
 
     clients.forEach(c => {
       const cls = utilClass(c.utilization);
-      const pct = Math.min((c.utilization * 100), 140);
+      const pct = Math.min((c.utilization * 100), SETTINGS.forecastCapPct || 140);
       const item = document.createElement("div");
       item.className = "attentionItem";
       item.innerHTML = `
@@ -657,8 +1664,10 @@
           <div style="min-width:0;">
             <div class="name">${escapeHtml(c.client)}</div>
             <div class="meta">
-              ${fmtInt(c.consumedMinutes)} / ${fmtInt(c.committedMinutes)} minutes •
+              ${fmtInt(c.consumedMinutes)} / ${fmtInt(c.committedMinutes)} min •
+              Remaining ${fmtInt(c.remainingMinutes)} •
               ${escapeHtml(c.primaryCsm || "No CSM")}
+              ${c.lastSessionDate ? ` • Last ${escapeHtml(c.lastSessionDate)}` : ""}
             </div>
           </div>
         </div>
@@ -669,17 +1678,44 @@
           </div>
         </div>
       `;
+      item.addEventListener("click", ()=> openClientDrawer(c.client, view));
       els.attentionList.appendChild(item);
     });
   }
 
-  function renderCharts(){
-    const daily = state.summary?.daily || [];
-    const top = state.summary?.topClients || [];
+  function renderActions(view){
+    const actions = view.actions || [];
+    els.actionsList.innerHTML = "";
+    els.actionsEmpty.style.display = actions.length ? "none" : "block";
 
-    // Daily
-    const dLabels = daily.map(x => x.date);
-    const dData = daily.map(x => x.minutes);
+    actions.forEach(a=>{
+      const item = document.createElement("div");
+      item.className = "actionItem";
+      const dotClass = a.kind === "over" ? "bad" : (a.kind === "action" ? "warn" : "good");
+      item.innerHTML = `
+        <div style="min-width:0;">
+          <div class="aTitle"><span class="dot ${dotClass}" style="display:inline-block; vertical-align:middle; margin-right:8px;"></span>${escapeHtml(a.title)}</div>
+          <div class="aSub">${escapeHtml(a.sub)}</div>
+          <div class="aSub" style="margin-top:6px;"><strong>Suggestion:</strong> ${escapeHtml(a.suggestion)} <span style="opacity:.8">(${escapeHtml(a.extra || "")})</span></div>
+        </div>
+        <div class="actionBtns">
+          <button class="secondary miniBtn" data-client="${escapeHtml(a.client)}">Open</button>
+          <button class="secondary miniBtn" data-copy="${escapeHtml(a.client)}">Copy</button>
+        </div>
+      `;
+      const [openBtn, copyBtn] = item.querySelectorAll("button");
+      openBtn.addEventListener("click", ()=> openClientDrawer(a.client, view));
+      copyBtn.addEventListener("click", async ()=>{
+        await copyToClipboard(buildClientMessage(a.client, view));
+      });
+      els.actionsList.appendChild(item);
+    });
+  }
+
+  function renderCharts(view){
+    // Daily chart
+    const dLabels = view.daily.map(x => x.date);
+    const dData = view.daily.map(x => x.minutes);
 
     if (charts.daily) charts.daily.destroy();
     charts.daily = new Chart(document.getElementById("chartDaily"), {
@@ -689,6 +1725,9 @@
     });
 
     // Top clients
+    const top = [...view.clients]
+      .sort((a,b)=>(b.consumedMinutes - a.consumedMinutes))
+      .slice(0,10);
     const cLabels = top.map(x => x.client);
     const cData = top.map(x => x.consumedMinutes);
 
@@ -698,38 +1737,68 @@
       data: { labels: cLabels, datasets: [{ label:"Minutes", data: cData }] },
       options: { responsive:true, plugins:{ legend:{ display:false } } }
     });
+
+    // Burndown
+    const bd = view.forecast?.series;
+    const days = bd?.days || [];
+    const actualCum = (bd?.actual || []).map(x=>x.cumMinutes);
+    const projCum = (bd?.projected || []).map(x=>x.projectedCumMinutes);
+    const committedLine = days.map(_ => view.totals.totalCommitted || 0);
+
+    if (charts.burndown) charts.burndown.destroy();
+    charts.burndown = new Chart(document.getElementById("chartBurndown"), {
+      type: "line",
+      data: {
+        labels: days,
+        datasets: [
+          { label:"Actual (cum)", data: actualCum, tension: 0.2 },
+          { label:"Projected (cum)", data: projCum, tension: 0.2 },
+          { label:"Committed", data: committedLine, tension: 0.0 },
+        ]
+      },
+      options: {
+        responsive:true,
+        plugins:{ legend:{ display:true } },
+        scales: { x: { ticks: { maxTicksLimit: 8 } } }
+      }
+    });
   }
 
-  function renderTables(){
-    // Clients table
-    const clientsData = (state.clients || []).map(c => ({
+  function renderTables(view){
+    // Clients table data
+    const clientsData = (view.clients || []).map(c => ({
       client: c.client,
       locations: c.locations,
       committed: c.committedMinutes,
       consumed: c.consumedMinutes,
+      remaining: c.remainingMinutes,
       utilization: c.utilization,
       overage: c.overageMinutes,
+      overageAmount: c.overageAmount,
+      currency: c.currency,
+      ratePerHour: c.ratePerHour,
       sessions: c.sessionsCount,
       last: c.lastSessionDate,
       csm: c.primaryCsm,
-      overageAmount: c.overageAmount,
-      currency: c.currency
+      briefsMissing: c.briefsMissing,
     }));
 
     if (!tables.clients){
       tables.clients = new Tabulator("#clientsTable", {
         data: clientsData,
         layout: "fitColumns",
-        height: "520px",
+        height: "540px",
         pagination: true,
         paginationSize: 12,
         movableColumns: true,
         resizableColumns: true,
         columns: [
-          {title:"Client", field:"client", minWidth:220, headerFilter:true},
+          {title:"Client", field:"client", minWidth:240, headerFilter:true},
+          {title:"Primary CSM", field:"csm", width:160, headerFilter:true},
           {title:"Locations", field:"locations", sorter:"number", hozAlign:"right"},
           {title:"Committed", field:"committed", sorter:"number", hozAlign:"right"},
           {title:"Consumed", field:"consumed", sorter:"number", hozAlign:"right"},
+          {title:"Remaining", field:"remaining", sorter:"number", hozAlign:"right"},
           {
             title:"Utilization",
             field:"utilization",
@@ -739,30 +1808,76 @@
               const v = cell.getValue();
               if (v == null) return "—";
               const pct = v * 100;
-              const cls = v >= 1 ? "bad" : (v >= 0.8 ? "warn" : "good");
+              const cls = v >= 1 ? "bad" : (v >= SETTINGS.warnThreshold ? "warn" : "good");
               const color = cls === "bad" ? "var(--bad)" : (cls === "warn" ? "var(--warn)" : "var(--good)");
               return `
                 <div style="display:flex; align-items:center; gap:10px;">
                   <span class="dot ${cls}"></span>
                   <div style="flex:1; min-width:120px; height:10px; border-radius:999px; background:rgba(15,23,42,.06); overflow:hidden;">
-                    <div style="height:100%; width:${Math.min(pct,140)}%; background:${color};"></div>
+                    <div style="height:100%; width:${Math.min(pct, SETTINGS.forecastCapPct || 140)}%; background:${color};"></div>
                   </div>
                   <div style="width:66px; text-align:right; font-family:var(--mono); color:var(--muted);">${pct.toFixed(1)}%</div>
                 </div>`;
             }
           },
           {title:"Overage", field:"overage", sorter:"number", hozAlign:"right"},
+          {
+            title:"Rate/hr",
+            field:"ratePerHour",
+            sorter:"number",
+            hozAlign:"right",
+            editor:"number",
+            editorParams:{ min:0, step:5 },
+            formatter:(cell)=>{
+              const v = cell.getValue();
+              return v == null ? "—" : fmt2(v);
+            }
+          },
+          {
+            title:"Overage amount",
+            field:"overageAmount",
+            sorter:"number",
+            hozAlign:"right",
+            formatter:(cell)=>{
+              const v = cell.getValue();
+              const row = cell.getRow().getData();
+              if (v == null) return "—";
+              return fmtCurrency(v, row.currency || "EUR");
+            }
+          },
           {title:"# Sessions", field:"sessions", sorter:"number", hozAlign:"right"},
+          {title:"Briefs missing", field:"briefsMissing", sorter:"number", hozAlign:"right"},
           {title:"Last session", field:"last", sorter:"string"},
-          {title:"Primary CSM", field:"csm", sorter:"string"},
         ],
+        rowClick: (e, row)=>{
+          const d = row.getData();
+          openClientDrawer(d.client, view);
+        },
+        cellEdited: (cell)=>{
+          const field = cell.getField();
+          if (field !== "ratePerHour") return;
+          const row = cell.getRow().getData();
+          const rates = loadRates();
+          const client = row.client;
+          const v = cell.getValue();
+          if (v == null || v === "" || !Number.isFinite(Number(v))){
+            if (rates[client]) delete rates[client].ratePerHour;
+          } else {
+            rates[client] = rates[client] || {};
+            rates[client].ratePerHour = Number(v);
+            rates[client].currency = row.currency || rates[client].currency || "EUR";
+          }
+          saveRates(rates);
+          // re-render to recompute overage amounts
+          rerenderFromCurrentState();
+        }
       });
     } else {
       tables.clients.replaceData(clientsData);
     }
 
-    // Sessions table
-    const sessionsData = (state.sessions || []).map(s => ({
+    // Sessions table data
+    const sessionsData = (view.sessions || []).map(s => ({
       date: s.date,
       client: s.client,
       account: s.account,
@@ -778,7 +1893,7 @@
       tables.sessions = new Tabulator("#sessionsTable", {
         data: sessionsData,
         layout: "fitColumns",
-        height: "560px",
+        height: "580px",
         pagination: true,
         paginationSize: 12,
         movableColumns: true,
@@ -797,9 +1912,9 @@
             width:90,
             formatter:(cell)=>{
               const url = cell.getValue();
-              if (!url) return "";
+              if (!url) return `<span style="color:rgba(91,103,128,.7); font-weight:850;">—</span>`;
               const safe = escapeHtml(url);
-              return `<a href="${safe}" target="_blank" rel="noopener" style="font-weight:800;">Open</a>`;
+              return `<a href="${safe}" target="_blank" rel="noopener" style="font-weight:900;">Open</a>`;
             }
           },
           {title:"Notes", field:"notes", minWidth:260},
@@ -832,6 +1947,282 @@
     });
   }
 
+  /*********************************************************
+   * Drawer (client details + per-client trend)
+   *********************************************************/
+  function openClientDrawer(clientName, view){
+    const client = view.clients.find(c=>c.client === clientName);
+    if(!client) return;
+
+    els.drawerTitle.textContent = client.client;
+    els.drawerSub.textContent = `${client.primaryCsm || "No CSM"} • ${client.locations ? `${client.locations} locations` : "—"} • Last: ${client.lastSessionDate || "—"}`;
+
+    const cls = utilClass(client.utilization);
+    els.drawerDot.className = "dot " + cls;
+    els.drawerUtilText.textContent = client.utilization == null ? "No commitment" : `${(client.utilization*100).toFixed(1)}%`;
+
+    els.drawerCommitted.textContent = fmtInt(client.committedMinutes) + " min";
+    els.drawerConsumed.textContent = fmtInt(client.consumedMinutes) + " min";
+    els.drawerRemaining.textContent = fmtInt(client.remainingMinutes) + " min";
+    els.drawerOverage.textContent = fmtInt(client.overageMinutes) + " min";
+
+    // Recent sessions list
+    const sessions = (view.sessions || [])
+      .filter(s=>s.client === client.client)
+      .sort((a,b)=> (b.date||"").localeCompare(a.date||""))
+      .slice(0,5);
+
+    els.drawerSessions.innerHTML = sessions.length ? "" : `<div class="row"><span><strong>No sessions</strong></span><span>—</span></div>`;
+    for (const s of sessions){
+      const right = `${fmtInt(s.durationMinutes)} min`;
+      const left = `<strong>${escapeHtml(s.date || "—")}</strong> • ${escapeHtml(s.account || "—")} ${s.briefUrl ? "• brief" : ""}`;
+      const row = document.createElement("div");
+      row.className = "row";
+      row.innerHTML = `<span>${left}</span><span style="font-family:var(--mono)">${right}</span>`;
+      row.addEventListener("click", ()=>{
+        // focus tables and scroll sessions
+        state.focusClient = client.client;
+        syncClientFilterToFocus();
+        rerenderFromCurrentState();
+        closeDrawer();
+        scrollToTables();
+      });
+      els.drawerSessions.appendChild(row);
+    }
+
+    // Hints
+    const hints = [];
+    if (client.overageMinutes > 0){
+      hints.push(`Overage: ${fmtInt(client.overageMinutes)} minutes.`);
+    } else if (client.utilization != null && client.utilization >= SETTINGS.actionThreshold){
+      hints.push(`Near limit: only ${fmtInt(client.remainingMinutes)} minutes remaining.`);
+    }
+    if (client.ratePerHour != null){
+      const amt = (client.overageMinutes/60) * client.ratePerHour;
+      hints.push(`Rate/hr: ${fmt2(client.ratePerHour)} → est. overage ${fmtCurrency(amt, client.currency)}.`);
+    } else {
+      hints.push(`Tip: add rate/hr in Clients table to auto-calc overage amount.`);
+    }
+    if (client.briefsMissing > 0){
+      hints.push(`${fmtInt(client.briefsMissing)} session(s) missing a brief link in this view.`);
+    }
+    hints.push(`Click "Focus tables" to filter everything to this client.`);
+
+    els.drawerHints.innerHTML = "";
+    for (const h of hints){
+      const row = document.createElement("div");
+      row.className = "row";
+      row.innerHTML = `<span>${escapeHtml(h)}</span><span>→</span>`;
+      els.drawerHints.appendChild(row);
+    }
+
+    // Per-client trend chart (minutes per day)
+    const dailyMap = new Map();
+    for (const s of (view.sessions || [])){
+      if (s.client !== client.client) continue;
+      dailyMap.set(s.date, (dailyMap.get(s.date) || 0) + (Number(s.durationMinutes||0)));
+    }
+    const daily = Array.from(dailyMap.entries())
+      .map(([date, minutes])=>({date, minutes}))
+      .sort((a,b)=> a.date.localeCompare(b.date));
+    const labels = daily.map(x=>x.date);
+    const data = daily.map(x=>x.minutes);
+
+    if (charts.clientTrend) charts.clientTrend.destroy();
+    charts.clientTrend = new Chart(document.getElementById("chartClientTrend"), {
+      type: "bar",
+      data: { labels, datasets: [{ label:"Minutes", data }] },
+      options: { responsive:true, plugins:{ legend:{ display:false } }, scales: { x: { ticks: { maxTicksLimit: 6 } } } }
+    });
+
+    // Drawer buttons
+    els.drawerCopyBtn.onclick = async ()=> copyToClipboard(buildClientMessage(client.client, view));
+    els.drawerFocusBtn.onclick = ()=>{
+      state.focusClient = client.client;
+      syncClientFilterToFocus();
+      rerenderFromCurrentState();
+      closeDrawer();
+      scrollToTables();
+    };
+    els.drawerClearFocusBtn.onclick = ()=>{
+      state.focusClient = null;
+      syncClientFilterToFocus();
+      rerenderFromCurrentState();
+    };
+
+    // Open
+    els.drawerBackdrop.style.display = "block";
+    els.drawer.classList.add("open");
+    els.drawer.setAttribute("aria-hidden", "false");
+  }
+
+  function closeDrawer(){
+    els.drawer.classList.remove("open");
+    els.drawer.setAttribute("aria-hidden", "true");
+    els.drawerBackdrop.style.display = "none";
+  }
+
+  function syncClientFilterToFocus(){
+    if (state.focusClient){
+      els.clientFilter.value = state.focusClient;
+    } else if (els.clientFilter.value === state.focusClient) {
+      els.clientFilter.value = "all";
+    }
+  }
+
+  function scrollToTables(){
+    // scroll to clients table
+    const el = document.getElementById("clientsTable");
+    if (el) el.scrollIntoView({ behavior:"smooth", block:"start" });
+  }
+
+  function buildClientMessage(clientName, view){
+    const c = view.clients.find(x=>x.client === clientName);
+    if(!c) return "";
+    const lines = [];
+    lines.push(`Client: ${c.client}`);
+    lines.push(`CSM: ${c.primaryCsm || "—"}`);
+    lines.push(`Committed: ${fmtInt(c.committedMinutes)} min`);
+    lines.push(`Consumed: ${fmtInt(c.consumedMinutes)} min`);
+    lines.push(`Utilization: ${c.utilization == null ? "—" : fmtPct(c.utilization)}`);
+    lines.push(`Remaining: ${fmtInt(c.remainingMinutes)} min`);
+    lines.push(`Overage: ${fmtInt(c.overageMinutes)} min`);
+    if (c.ratePerHour != null){
+      lines.push(`Rate/hr: ${fmt2(c.ratePerHour)} (${c.currency || "EUR"})`);
+      if (c.overageMinutes > 0){
+        lines.push(`Est. overage amount: ${fmtCurrency((c.overageMinutes/60)*c.ratePerHour, c.currency || "EUR")}`);
+      }
+    }
+    lines.push(`Last session: ${c.lastSessionDate || "—"}`);
+    lines.push(`Sessions (view): ${fmtInt(c.sessionsCount)}`);
+    if (c.briefsMissing > 0) lines.push(`Briefs missing (view): ${fmtInt(c.briefsMissing)}`);
+    return lines.join("\n");
+  }
+
+  /*********************************************************
+   * Alerts (optional)
+   *********************************************************/
+  function updateAlertsUI(){
+    const enabled = SETTINGS.alertsEnabled && ("Notification" in window);
+    els.alertsDot.className = "dot " + (enabled ? "good" : "bad");
+    els.alertsText.textContent = enabled ? "Enabled" : "Disabled";
+  }
+
+  function maybeNotifyAlerts(view){
+    if (!SETTINGS.alertsEnabled) return;
+    if (!("Notification" in window)) return;
+    if (Notification.permission !== "granted") return;
+
+    // Build current snapshot of utilization per client
+    const snap = {};
+    for (const c of view.clients){
+      if ((c.committedMinutes||0) <= 0) continue;
+      snap[c.client] = c.utilization ?? null;
+    }
+
+    let prev = {};
+    try{ prev = JSON.parse(localStorage.getItem(LS.alertSnapshot) || "{}"); }catch(e){ prev = {}; }
+
+    const warn = SETTINGS.warnThreshold || 0.80;
+    const action = SETTINGS.actionThreshold || 0.92;
+
+    for (const [client, util] of Object.entries(snap)){
+      const prevUtil = prev[client];
+      if (util == null) continue;
+      // notify only on crossing thresholds upward
+      const crossedWarn = (prevUtil == null || prevUtil < warn) && util >= warn;
+      const crossedAction = (prevUtil == null || prevUtil < action) && util >= action;
+      const crossedOver = (prevUtil == null || prevUtil < 1.0) && util >= 1.0;
+
+      const title = crossedOver ? "Overage reached" : crossedAction ? "Approaching limit" : crossedWarn ? "At risk" : "";
+      if (!title) continue;
+
+      const body = `${client}: ${fmtPct(util)} utilization in current view.`;
+      try{
+        new Notification(title, { body });
+      }catch(e){}
+    }
+
+    localStorage.setItem(LS.alertSnapshot, JSON.stringify(snap));
+  }
+
+  /*********************************************************
+   * Settings modal
+   *********************************************************/
+  function openSettings(){
+    // fill inputs
+    els.warnThreshold.value = SETTINGS.warnThreshold;
+    els.actionThreshold.value = SETTINGS.actionThreshold;
+    els.forecastWindow.value = SETTINGS.forecastWindowDays;
+    els.forecastCap.value = SETTINGS.forecastCapPct;
+    updateAlertsUI();
+
+    els.modalBackdrop.style.display = "block";
+    els.settingsModal.style.display = "block";
+  }
+
+  function closeSettings(){
+    els.modalBackdrop.style.display = "none";
+    els.settingsModal.style.display = "none";
+  }
+
+  els.enableAlertsBtn.addEventListener("click", async ()=>{
+    if (!("Notification" in window)){
+      alert("This browser doesn’t support notifications.");
+      return;
+    }
+    const perm = await Notification.requestPermission();
+    if (perm === "granted"){
+      SETTINGS = saveSettings({ alertsEnabled: true });
+    } else {
+      SETTINGS = saveSettings({ alertsEnabled: false });
+    }
+    updateAlertsUI();
+  });
+
+  els.clearRatesBtn.addEventListener("click", ()=>{
+    if (!confirm("Clear all saved client rates (local only)?")) return;
+    saveRates({});
+    rerenderFromCurrentState();
+  });
+
+  els.downloadRatesBtn.addEventListener("click", ()=>{
+    const rates = loadRates();
+    downloadJSON("rates.json", rates);
+  });
+
+  els.saveSettingsBtn.addEventListener("click", ()=>{
+    const warn = Number(els.warnThreshold.value);
+    const action = Number(els.actionThreshold.value);
+    const win = Number(els.forecastWindow.value);
+    const cap = Number(els.forecastCap.value);
+
+    SETTINGS = saveSettings({
+      warnThreshold: Number.isFinite(warn) ? warn : defaultSettings.warnThreshold,
+      actionThreshold: Number.isFinite(action) ? action : defaultSettings.actionThreshold,
+      forecastWindowDays: Number.isFinite(win) ? win : defaultSettings.forecastWindowDays,
+      forecastCapPct: Number.isFinite(cap) ? cap : defaultSettings.forecastCapPct,
+    });
+
+    closeSettings();
+    rerenderFromCurrentState();
+  });
+
+  els.resetSettingsBtn.addEventListener("click", ()=>{
+    if (!confirm("Reset thresholds/forecast/alerts to defaults (keeps rates)?")) return;
+    const curRates = loadRates();
+    localStorage.setItem(LS.settings, JSON.stringify(defaultSettings));
+    SETTINGS = loadSettings();
+    // keep rates as-is
+    saveRates(curRates);
+    updateAlertsUI();
+    closeSettings();
+    rerenderFromCurrentState();
+  });
+
+  /*********************************************************
+   * Exports
+   *********************************************************/
   function downloadCSV(filename, rows){
     const esc = (v)=> `"${String(v ?? "").replaceAll('"','""')}"`;
     const csv = rows.map(r => r.map(esc).join(",")).join("\n");
@@ -844,22 +2235,286 @@
     URL.revokeObjectURL(url);
   }
 
+  function downloadJSON(filename, obj){
+    const blob = new Blob([JSON.stringify(obj, null, 2)], {type:"application/json;charset=utf-8;"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
   function exportClientsCSV(){
-    const rows = [["Client","Locations","CommittedMinutes","ConsumedMinutes","Utilization","OverageMinutes","#Sessions","LastSession","PrimaryCSM"]];
-    for (const c of (state.clients || [])){
-      rows.push([c.client, c.locations, c.committedMinutes, c.consumedMinutes, c.utilization, c.overageMinutes, c.sessionsCount, c.lastSessionDate, c.primaryCsm]);
+    const rows = [["Client","PrimaryCSM","Locations","CommittedMinutes","ConsumedMinutes","RemainingMinutes","Utilization","OverageMinutes","RatePerHour","Currency","OverageAmount","#Sessions","BriefsMissing","LastSession"]];
+    const data = tables.clients ? tables.clients.getData("active") : [];
+    for (const c of data){
+      rows.push([
+        c.client, c.csm, c.locations, c.committed, c.consumed, c.remaining, c.utilization,
+        c.overage, c.ratePerHour, c.currency, c.overageAmount, c.sessions, c.briefsMissing, c.last
+      ]);
     }
     downloadCSV("clients.csv", rows);
   }
 
   function exportSessionsCSV(){
     const rows = [["Date","Client","Account","CSM","Minutes","Attendees","MainContact","BriefURL","Notes"]];
-    for (const s of (state.sessions || [])){
-      rows.push([s.date, s.client, s.account, s.csm, s.durationMinutes, s.attendees, s.mainContact, s.briefUrl, s.notes]);
+    const data = tables.sessions ? tables.sessions.getData("active") : [];
+    for (const s of data){
+      rows.push([s.date, s.client, s.account, s.csm, s.minutes, s.attendees, s.contact, s.brief, s.notes]);
     }
     downloadCSV("sessions.csv", rows);
   }
 
+  function exportReportJSON(){
+    const view = buildViewData();
+    const report = {
+      generatedAt: new Date().toISOString(),
+      filter: view.filter,
+      totals: {
+        ...view.totals,
+        amountByCurrency: Object.fromEntries(view.totals.amountByCurrency.entries()),
+      },
+      clients: view.clients,
+      sessions: view.sessions,
+      daily: view.daily,
+      forecast: {
+        asOfIso: view.forecast.asOfIso,
+        runRatePerDay: view.forecast.runRatePerDay,
+        endActual: view.forecast.endActual,
+        endProjected: view.forecast.endProjected,
+        totalCommitted: view.forecast.totalCommitted,
+      },
+      actions: view.actions,
+    };
+    downloadJSON("report.json", report);
+  }
+
+  async function copyToClipboard(text){
+    try{
+      await navigator.clipboard.writeText(text);
+    }catch(e){
+      // fallback
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+    }
+  }
+
+  /*********************************************************
+   * Error rendering
+   *********************************************************/
+  function showFriendlyError(err, debug){
+    els.friendlyError.style.display = "block";
+    const msg = escapeHtml(err?.message || String(err || "Unknown error"));
+    const details = debug ? escapeHtml(JSON.stringify(debug, null, 2)) : "";
+    els.friendlyErrorDetails.innerHTML = `
+      <div style="margin-bottom:6px;"><strong>Error:</strong> <span style="font-family:var(--mono)">${msg}</span></div>
+      ${debug ? `<div style="margin-top:8px;"><strong>Debug:</strong><pre style="white-space:pre-wrap; font-family:var(--mono); font-size:11px; color:var(--muted); margin:6px 0 0;">${details}</pre></div>` : ""}
+    `;
+    const link = API_URL + "?action=periods&callback=TEST";
+    els.jsonpTestLink.textContent = link;
+    els.jsonpTestLink.onclick = () => window.open(link, "_blank");
+  }
+
+  /*********************************************************
+   * Populate filter dropdowns
+   *********************************************************/
+  function populateCsmClientFilters(view){
+    // CSM options from clients + sessions
+    const csms = new Set();
+    for (const c of (view.clients || [])){
+      if (c.primaryCsm) csms.add(c.primaryCsm);
+    }
+    for (const s of (view.sessions || [])){
+      if (s.csm) csms.add(s.csm);
+    }
+    const csmList = ["all", ...Array.from(csms).sort((a,b)=>a.localeCompare(b))];
+    const currentCsm = els.csmFilter.value || "all";
+    els.csmFilter.innerHTML = "";
+    for (const c of csmList){
+      const opt = document.createElement("option");
+      opt.value = c;
+      opt.textContent = c === "all" ? "All" : c;
+      els.csmFilter.appendChild(opt);
+    }
+    els.csmFilter.value = csmList.includes(currentCsm) ? currentCsm : "all";
+
+    // Client options
+    const clientList = ["all", ...Array.from(new Set((state.rawSummary?.clients || []).map(x=>normalizeStr(x.client)).filter(Boolean))).sort((a,b)=>a.localeCompare(b))];
+    const currentClient = els.clientFilter.value || "all";
+    els.clientFilter.innerHTML = "";
+    for (const c of clientList){
+      const opt = document.createElement("option");
+      opt.value = c;
+      opt.textContent = c === "all" ? "All" : c;
+      els.clientFilter.appendChild(opt);
+    }
+    // Focus client should win
+    if (state.focusClient && clientList.includes(state.focusClient)){
+      els.clientFilter.value = state.focusClient;
+    } else {
+      els.clientFilter.value = clientList.includes(currentClient) ? currentClient : "all";
+    }
+  }
+
+  /*********************************************************
+   * Periods + refresh flow (+ compare previous)
+   *********************************************************/
+  async function loadPeriods(){
+    const res = await apiCall(API_URL + "?action=periods");
+    if (!res || res.ok !== true) throw new Error(res?.error || "Could not load periods");
+
+    const periods = (res.periods || []).slice().sort((a,b)=> b.localeCompare(a)); // newest first
+    state.periods = periods;
+
+    els.period.innerHTML = "";
+    periods.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p;
+      opt.textContent = p;
+      els.period.appendChild(opt);
+    });
+
+    // default to newest or today's period
+    els.period.value = periods[0] || todayPeriod();
+  }
+
+  function buildSessionsUrl(period, from, to){
+    return API_URL + `?action=sessions&period=${encodeURIComponent(period)}`
+      + (from ? `&from=${encodeURIComponent(from)}` : "")
+      + (to ? `&to=${encodeURIComponent(to)}` : "");
+  }
+
+  async function refreshAll(){
+    els.friendlyError.style.display = "none";
+    els.refreshBtn.disabled = true;
+
+    const period = els.period.value || todayPeriod();
+    let from = els.from.value;
+    let to = els.to.value;
+
+    // Basic range validation
+    if (from && to && from > to){
+      // swap
+      const tmp = from; from = to; to = tmp;
+      els.from.value = from;
+      els.to.value = to;
+    }
+
+    setConnection("warn", "Loading data…");
+
+    const debug = {
+      mode: els.useFetchToggle.checked ? "fetch" : "jsonp",
+      period,
+      from: from || null,
+      to: to || null,
+      comparePrev: !!els.compareToggle.checked,
+      ts: new Date().toISOString(),
+      endpoints: {},
+    };
+
+    try{
+      const summaryUrl = API_URL + `?action=summary&period=${encodeURIComponent(period)}`;
+      const sessionsUrl = buildSessionsUrl(period, from, to);
+      debug.endpoints.currentSummary = summaryUrl;
+      debug.endpoints.currentSessions = sessionsUrl;
+
+      const [summary, sessionsRes] = await Promise.all([
+        apiCall(summaryUrl),
+        apiCall(sessionsUrl),
+      ]);
+
+      if (!summary?.ok) throw new Error("Summary error: " + (summary?.error || "Unknown"));
+      if (!sessionsRes?.ok) throw new Error("Sessions error: " + (sessionsRes?.error || "Unknown"));
+
+      state.rawSummary = summary;
+      state.rawSessions = sessionsRes.sessions || [];
+
+      // Compare prev month (optionally)
+      state.prevSummary = null;
+      state.prevSessions = [];
+
+      if (els.compareToggle.checked){
+        const prevPeriod = addMonths(period, -1);
+        let prevFrom = from ? shiftDateIsoByMonths(from, -1) : "";
+        let prevTo = to ? shiftDateIsoByMonths(to, -1) : "";
+        if (prevFrom) prevFrom = clampDateToPeriod(prevFrom, prevPeriod);
+        if (prevTo) prevTo = clampDateToPeriod(prevTo, prevPeriod);
+
+        const prevSummaryUrl = API_URL + `?action=summary&period=${encodeURIComponent(prevPeriod)}`;
+        const prevSessionsUrl = buildSessionsUrl(prevPeriod, prevFrom, prevTo);
+        debug.endpoints.prevSummary = prevSummaryUrl;
+        debug.endpoints.prevSessions = prevSessionsUrl;
+
+        try{
+          const [ps, pss] = await Promise.all([ apiCall(prevSummaryUrl), apiCall(prevSessionsUrl) ]);
+          if (ps?.ok) state.prevSummary = ps;
+          if (pss?.ok) state.prevSessions = pss.sessions || [];
+        }catch(e){
+          // comparison is optional; ignore but keep debug
+          debug.compareError = String(e?.message || e);
+        }
+      }
+
+      // Build and render
+      const view = buildViewData();
+      populateCsmClientFilters(view);
+
+      let compareView = null;
+      if (els.compareToggle.checked && state.prevSummary){
+        // temporarily swap state to build prev view using same filters, shifted by prev range already applied via fetch
+        const current = { rawSummary: state.rawSummary, rawSessions: state.rawSessions };
+        state.rawSummary = state.prevSummary;
+        state.rawSessions = state.prevSessions;
+        const prevView = buildViewData();
+        // restore
+        state.rawSummary = current.rawSummary;
+        state.rawSessions = current.rawSessions;
+        compareView = prevView;
+      }
+
+      renderAll(view, compareView);
+
+      const now = new Date();
+      els.lastRefreshed.textContent = "Last refreshed: " + now.toLocaleString();
+      setConnection("ok", "Connected");
+
+      state.lastDebug = debug;
+    }catch(e){
+      setConnection("bad", "Couldn’t load data");
+      state.lastDebug = debug;
+      showFriendlyError(e, debug);
+    } finally {
+      els.refreshBtn.disabled = false;
+    }
+  }
+
+  function rerenderFromCurrentState(){
+    if (!state.rawSummary) return;
+    const view = buildViewData();
+    populateCsmClientFilters(view);
+
+    let compareView = null;
+    if (els.compareToggle.checked && state.prevSummary){
+      const current = { rawSummary: state.rawSummary, rawSessions: state.rawSessions };
+      state.rawSummary = state.prevSummary;
+      state.rawSessions = state.prevSessions;
+      const prevView = buildViewData();
+      state.rawSummary = current.rawSummary;
+      state.rawSessions = current.rawSessions;
+      compareView = prevView;
+    }
+
+    renderAll(view, compareView);
+  }
+
+  /*********************************************************
+   * Small helpers
+   *********************************************************/
   function escapeHtml(s){
     return String(s ?? "")
       .replaceAll("&","&amp;")
@@ -869,37 +2524,86 @@
       .replaceAll("'","&#039;");
   }
 
-  // Events
-  els.refreshBtn.addEventListener("click", async ()=>{
-    try{ await refreshAll(); }
-    catch(e){
-      setConnection("bad", "Couldn’t load data");
-      els.friendlyError.style.display = "block";
-      const link = API_URL + "?action=periods&callback=TEST";
-      els.jsonpTestLink.textContent = link;
-      els.jsonpTestLink.onclick = () => window.open(link, "_blank");
-    }
+  /*********************************************************
+   * Events
+   *********************************************************/
+  els.refreshBtn.addEventListener("click", refreshAll);
+  els.period.addEventListener("change", ()=> refreshAll());
+
+  // View filter controls
+  [els.from, els.to, els.csmFilter, els.clientFilter, els.locationsFilter, els.atRiskToggle, els.overageOnlyToggle, els.compareToggle].forEach(el=>{
+    el.addEventListener("change", ()=>{
+      // Changing filters should rerender; period / date range requires refresh (server-side date range filter).
+      // We'll rerender for most changes, but if from/to changed, we refresh to let server filter sessions too.
+      if (el === els.from || el === els.to || el === els.period || el === els.compareToggle){
+        refreshAll();
+      } else {
+        // focusClient should align with client filter when changed
+        state.focusClient = (els.clientFilter.value !== "all") ? els.clientFilter.value : null;
+        rerenderFromCurrentState();
+      }
+    });
   });
-  els.period.addEventListener("change", ()=> els.refreshBtn.click());
+
   els.clientSearch.addEventListener("input", applyClientSearch);
   els.sessionSearch.addEventListener("input", applySessionSearch);
   els.clearClientSearch.addEventListener("click", ()=>{ els.clientSearch.value=""; applyClientSearch(); });
   els.clearSessionSearch.addEventListener("click", ()=>{ els.sessionSearch.value=""; applySessionSearch(); });
+
   els.exportClientsBtn.addEventListener("click", exportClientsCSV);
   els.exportSessionsBtn.addEventListener("click", exportSessionsCSV);
+  els.exportReportBtn.addEventListener("click", exportReportJSON);
 
-  // Init
+  els.copyActionsBtn.addEventListener("click", async ()=>{
+    const view = buildViewData();
+    const lines = ["Suggested actions (current view):"];
+    (view.actions || []).forEach((a,i)=>{
+      lines.push(`${i+1}. ${a.title} — ${a.sub} | Suggestion: ${a.suggestion}`);
+    });
+    if (!view.actions?.length) lines.push("— none —");
+    await copyToClipboard(lines.join("\n"));
+  });
+
+  els.copyDebugBtn.addEventListener("click", async ()=>{
+    const d = state.lastDebug || {};
+    await copyToClipboard(JSON.stringify(d, null, 2));
+  });
+
+  // Drawer events
+  els.drawerBackdrop.addEventListener("click", closeDrawer);
+  els.drawerCloseBtn.addEventListener("click", closeDrawer);
+
+  // Settings
+  els.settingsBtn.addEventListener("click", openSettings);
+  els.modalBackdrop.addEventListener("click", closeSettings);
+  els.closeSettingsBtn.addEventListener("click", closeSettings);
+
+  // Keep focus in sync when user chooses client directly
+  els.clientFilter.addEventListener("change", ()=>{
+    state.focusClient = (els.clientFilter.value !== "all") ? els.clientFilter.value : null;
+  });
+
+  // Use fetch toggle warning (optional)
+  els.useFetchToggle.addEventListener("change", ()=>{
+    // no auto refresh; user can refresh
+  });
+
+  /*********************************************************
+   * Init
+   *********************************************************/
+  function initSettingsUI(){
+    updateAlertsUI();
+  }
+
   (async function init(){
+    initSettingsUI();
     try{
       setConnection("warn", "Connecting…");
       await loadPeriods();
       await refreshAll();
     } catch(e){
       setConnection("bad", "Connection needs fixing");
-      els.friendlyError.style.display = "block";
-      const link = API_URL + "?action=periods&callback=TEST";
-      els.jsonpTestLink.textContent = link;
-      els.jsonpTestLink.onclick = () => window.open(link, "_blank");
+      showFriendlyError(e, { init: true, mode: els.useFetchToggle.checked ? "fetch" : "jsonp" });
       // fallback period
       els.period.innerHTML = `<option value="${todayPeriod()}">${todayPeriod()}</option>`;
     }
@@ -908,3 +2612,4 @@
 
 </body>
 </html>
+```
