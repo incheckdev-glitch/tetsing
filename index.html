@@ -3,548 +3,711 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>CSM Dashboard</title>
+  <title>CSM Sessions Dashboard</title>
 
   <!-- Charts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-  <!-- Tabulator (Pro tables) -->
-  <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@6.2.0/dist/css/tabulator_midnight.min.css">
+  <!-- Tabulator (Nice tables) -->
+  <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@6.2.0/dist/css/tabulator.min.css">
   <script src="https://unpkg.com/tabulator-tables@6.2.0/dist/js/tabulator.min.js"></script>
 
   <style>
     :root{
-      --bg:#070b18;
-      --panel:#0f1732;
-      --panel2:#0c1228;
-      --card:rgba(255,255,255,.04);
-      --border:rgba(255,255,255,.09);
-      --text:#eaf0ff;
-      --muted:#aab4d6;
-      --accent:#6aa6ff;
-      --good:#55e0a3;
-      --warn:#ffcc66;
-      --bad:#ff6b6b;
-      --shadow: 0 18px 45px rgba(0,0,0,.45);
+      --bg:#f6f8ff;
+      --bg2:#eef3ff;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#5b6780;
+      --border:#e7ecff;
+
+      --primary:#3b82f6;
+      --primary2:#2563eb;
+      --good:#16a34a;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+
+      --shadow: 0 12px 30px rgba(15,23,42,.08);
       --radius: 18px;
+
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
     }
+
     *{ box-sizing:border-box; }
     body{
       margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      color:var(--text);
+      font-family: var(--sans);
+      color: var(--text);
       background:
-        radial-gradient(1100px 680px at 12% -10%, rgba(106,166,255,.20), transparent 60%),
-        radial-gradient(900px 520px at 98% 10%, rgba(85,224,163,.13), transparent 55%),
-        radial-gradient(850px 520px at 75% 110%, rgba(255,204,102,.10), transparent 55%),
-        var(--bg);
-    }
-
-    .app{
-      display:grid;
-      grid-template-columns: 280px 1fr;
+        radial-gradient(1000px 520px at 12% 0%, rgba(59,130,246,.14), transparent 60%),
+        radial-gradient(900px 520px at 92% 8%, rgba(34,197,94,.10), transparent 60%),
+        linear-gradient(180deg, var(--bg), var(--bg2));
       min-height:100vh;
     }
 
-    /* Sidebar */
-    .sidebar{
-      position:sticky; top:0;
-      height:100vh;
-      padding:18px;
-      border-right:1px solid var(--border);
-      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+    a{ color: var(--primary2); text-decoration:none; }
+    a:hover{ text-decoration: underline; }
+
+    .wrap{ max-width: 1240px; margin:0 auto; padding: 18px 16px 30px; }
+
+    /* Top */
+    header{
+      position: sticky;
+      top:0;
+      z-index:10;
       backdrop-filter: blur(10px);
+      background: rgba(246,248,255,.72);
+      border-bottom: 1px solid rgba(231,236,255,.9);
     }
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding: 14px 0;
+    }
+
     .brand{
-      display:flex; gap:10px; align-items:center;
-      padding:12px 12px;
-      border:1px solid var(--border);
-      border-radius: var(--radius);
-      background: rgba(255,255,255,.03);
-      box-shadow: var(--shadow);
+      display:flex;
+      align-items:center;
+      gap:10px;
     }
     .logo{
-      width:36px; height:36px; border-radius:12px;
-      background: radial-gradient(circle at 30% 30%, rgba(106,166,255,.9), rgba(106,166,255,.2));
-      border:1px solid rgba(106,166,255,.35);
+      width:42px;height:42px;border-radius:14px;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(59,130,246,.95), rgba(59,130,246,.15)),
+        #dbeafe;
+      box-shadow: 0 10px 20px rgba(59,130,246,.18);
+      border:1px solid rgba(59,130,246,.25);
     }
-    .brand h1{ font-size:14px; margin:0; }
-    .brand .sub{ font-size:12px; color:var(--muted); margin-top:2px; }
-
-    .nav{
-      margin-top:14px;
-      display:flex; flex-direction:column; gap:8px;
+    .brand h1{
+      margin:0;
+      font-size:16px;
+      letter-spacing:.2px;
     }
-    .nav a{
-      text-decoration:none; color:var(--text);
-      padding:10px 12px;
-      border:1px solid var(--border);
-      border-radius: 14px;
-      background: rgba(255,255,255,.02);
-    }
-    .nav a:hover{ border-color: rgba(106,166,255,.35); }
-    .nav a.active{
-      background: linear-gradient(180deg, rgba(106,166,255,.22), rgba(106,166,255,.08));
-      border-color: rgba(106,166,255,.40);
-    }
-
-    .sidecard{
-      margin-top:14px;
-      padding:12px;
-      border:1px solid var(--border);
-      border-radius: var(--radius);
-      background: rgba(255,255,255,.02);
-    }
-    .sidecard .t{ font-size:12px; color:var(--muted); }
-    .sidecard .v{ font-weight:800; font-size:20px; margin-top:6px; }
-    .pill{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:8px 10px;
-      border-radius: 999px;
-      border:1px solid var(--border);
-      background: rgba(255,255,255,.02);
-      color: var(--muted);
+    .brand .sub{
+      margin-top:2px;
       font-size:12px;
-      margin-top:10px;
+      color: var(--muted);
     }
-    .dot{ width:9px; height:9px; border-radius:50%; background:var(--accent); }
-    .dot.good{ background:var(--good); }
-    .dot.warn{ background:var(--warn); }
-    .dot.bad{ background:var(--bad); }
 
-    /* Main */
-    .main{
-      padding:20px 20px 30px;
-    }
-    .topbar{
-      position:sticky; top:0;
-      z-index:5;
-      padding:14px 14px;
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.85);
       border:1px solid var(--border);
-      border-radius: var(--radius);
-      background: rgba(7,11,24,.70);
-      backdrop-filter: blur(12px);
-      box-shadow: var(--shadow);
+      box-shadow: 0 10px 22px rgba(15,23,42,.06);
+      font-size:12px;
+      color: var(--muted);
+      white-space:nowrap;
     }
-    .toprow{
-      display:flex; gap:10px; flex-wrap:wrap; align-items:end; justify-content:space-between;
-    }
+    .dot{ width:10px;height:10px;border-radius:99px;background: var(--primary); }
+    .dot.good{ background: var(--good); }
+    .dot.warn{ background: var(--warn); }
+    .dot.bad{ background: var(--bad); }
+
+    /* Controls */
     .controls{
-      display:flex; gap:10px; flex-wrap:wrap; align-items:end;
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:flex-end;
     }
-    label{ display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
+    label{
+      display:block;
+      font-size:12px;
+      color: var(--muted);
+      margin-bottom:6px;
+    }
     select, input, button{
-      background: rgba(255,255,255,.03);
-      color:var(--text);
-      border:1px solid var(--border);
+      font-family: var(--sans);
       border-radius: 14px;
-      padding:10px 12px;
-      outline:none;
-      min-height:40px;
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      min-height: 40px;
+      background: rgba(255,255,255,.95);
+      outline: none;
+      box-shadow: 0 8px 18px rgba(15,23,42,.05);
     }
+    input::placeholder{ color: rgba(91,103,128,.65); }
     button{
       cursor:pointer;
-      background: linear-gradient(180deg, rgba(106,166,255,.25), rgba(106,166,255,.08));
-      border-color: rgba(106,166,255,.35);
-      font-weight:700;
+      font-weight: 700;
+      background: linear-gradient(180deg, rgba(59,130,246,.15), rgba(59,130,246,.06));
+      border-color: rgba(59,130,246,.25);
     }
+    button:hover{ filter: brightness(1.03); }
     button.secondary{
-      background: rgba(255,255,255,.03);
+      font-weight: 600;
+      background: rgba(255,255,255,.95);
       border-color: var(--border);
-      font-weight:600;
-    }
-    button:hover{ filter:brightness(1.07); }
-    .status{
-      font-size:12px;
-      color:var(--muted);
-      padding:9px 12px;
-      border:1px solid var(--border);
-      border-radius: 999px;
-      background: rgba(255,255,255,.02);
-      display:flex; align-items:center; gap:8px;
-    }
-    .status.err{
-      border-color: rgba(255,107,107,.35);
-      color: rgba(255,107,107,.95);
     }
 
+    /* Layout */
     .grid{
-      margin-top:14px;
       display:grid;
       grid-template-columns: repeat(12, 1fr);
-      gap:12px;
+      gap: 12px;
+      margin-top: 14px;
     }
+
     .card{
-      border:1px solid var(--border);
+      background: rgba(255,255,255,.92);
+      border: 1px solid var(--border);
       border-radius: var(--radius);
-      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
       box-shadow: var(--shadow);
-      padding:14px;
+      padding: 14px;
     }
+
     .kpi{ grid-column: span 3; }
-    .kpi .t{ color:var(--muted); font-size:12px; }
-    .kpi .v{ font-weight:900; font-size:24px; margin-top:8px; }
-    .kpi .s{ color:var(--muted); font-size:12px; margin-top:6px; }
+    .kpi .t{ font-size:12px; color: var(--muted); }
+    .kpi .v{ font-size:26px; font-weight: 900; margin-top:8px; letter-spacing: .2px; }
+    .kpi .s{ font-size:12px; color: var(--muted); margin-top:6px; }
 
     .span6{ grid-column: span 6; }
     .span12{ grid-column: span 12; }
 
-    .titleRow{
-      display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap;
-      margin-bottom:10px;
+    .sectionTitle{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap: 12px;
+      flex-wrap:wrap;
+      margin-bottom: 10px;
     }
-    .titleRow .title{ font-weight:900; letter-spacing:.2px; }
-    .titleRow .subtitle{ font-size:12px; color:var(--muted); margin-top:3px; }
-
-    .search{
-      display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+    .sectionTitle .title{
+      font-weight: 900;
+      font-size: 14px;
+      margin:0;
     }
-    .search input{ min-width:260px; }
+    .sectionTitle .subtitle{
+      margin-top:4px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
 
-    .tableWrap{
+    .inline{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    /* Friendly attention list */
+    .attentionList{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top: 10px;
+    }
+    .attentionItem{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      padding: 10px 12px;
       border:1px solid var(--border);
-      border-radius: 16px;
-      overflow:hidden;
-      background: rgba(255,255,255,.02);
+      border-radius: 14px;
+      background: rgba(246,248,255,.7);
     }
-
-    .hint{
+    .attentionItem .left{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width: 0;
+    }
+    .attentionItem .name{
+      font-weight: 800;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 360px;
+    }
+    .attentionItem .meta{
       font-size:12px;
       color: var(--muted);
-      margin-top:10px;
-      line-height:1.35;
+      margin-top:2px;
+    }
+    .bar{
+      width: 190px;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(15,23,42,.06);
+      overflow:hidden;
+      border:1px solid rgba(15,23,42,.06);
+    }
+    .bar > div{
+      height:100%;
+      width:0%;
+      background: var(--primary);
+      border-radius: 999px;
     }
 
+    /* Table area */
+    .tableWrap{
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow:hidden;
+      background: rgba(255,255,255,.92);
+    }
+
+    /* Tabulator tweaks for friendly vibe */
     .tabulator{
+      font-family: var(--sans) !important;
       background: transparent !important;
       border: none !important;
     }
+    .tabulator .tabulator-header{
+      background: rgba(246,248,255,.9) !important;
+      border-bottom: 1px solid var(--border) !important;
+    }
+    .tabulator .tabulator-col{
+      background: transparent !important;
+      border-right: 1px solid rgba(231,236,255,.6) !important;
+    }
+    .tabulator .tabulator-row{
+      background: rgba(255,255,255,.95) !important;
+      border-bottom: 1px solid rgba(231,236,255,.6) !important;
+    }
+    .tabulator .tabulator-row:nth-child(even){
+      background: rgba(246,248,255,.55) !important;
+    }
+    .tabulator .tabulator-cell{
+      padding: 10px 10px !important;
+    }
 
-    @media (max-width: 1060px){
-      .app{ grid-template-columns: 1fr; }
-      .sidebar{ position:relative; height:auto; border-right:none; border-bottom:1px solid var(--border); }
+    /* Skeleton */
+    .skeleton{
+      position: relative;
+      overflow:hidden;
+      background: rgba(15,23,42,.06);
+      border-radius: 12px;
+      height: 16px;
+    }
+    .skeleton::after{
+      content:"";
+      position:absolute;
+      top:0; left:-40%;
+      width:40%; height:100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
+      animation: shimmer 1.3s infinite;
+    }
+    @keyframes shimmer{
+      0%{ left:-40%; }
+      100%{ left:120%; }
+    }
+
+    /* Responsive */
+    @media (max-width: 1000px){
       .kpi{ grid-column: span 6; }
       .span6{ grid-column: span 12; }
+      .attentionItem .name{ max-width: 220px; }
+      .bar{ width: 150px; }
     }
   </style>
 </head>
-
 <body>
-<div class="app">
-  <aside class="sidebar">
-    <div class="brand">
-      <div class="logo"></div>
-      <div>
-        <h1>CSM Dashboard</h1>
-        <div class="sub">Sessions • Commitments • Overage</div>
-      </div>
-    </div>
 
-    <nav class="nav">
-      <a href="#overview" class="active" id="navOverview">Overview</a>
-      <a href="#clients" id="navClients">Clients</a>
-      <a href="#sessions" id="navSessions">Sessions</a>
-    </nav>
-
-    <div class="sidecard">
-      <div class="t">Legend</div>
-      <div class="pill"><span class="dot good"></span>&lt; 80% Util</div>
-      <div class="pill"><span class="dot warn"></span>80–99% Util</div>
-      <div class="pill"><span class="dot bad"></span>&ge; 100% Util</div>
-      <div class="hint">
-        If your page shows “JSON timeout”, open this in a browser:<br/>
-        <span style="color:var(--accent);">…/exec?action=periods&callback=TEST</span><br/>
-        It must start with <b>TEST(</b>.
-      </div>
-    </div>
-  </aside>
-
-  <main class="main">
+<header>
+  <div class="wrap">
     <div class="topbar">
-      <div class="toprow">
-        <div class="controls">
-          <div>
-            <label>Period (YYYY-MM)</label>
-            <select id="period"></select>
-          </div>
-          <div>
-            <label>Date from</label>
-            <input id="from" type="date"/>
-          </div>
-          <div>
-            <label>to</label>
-            <input id="to" type="date"/>
-          </div>
-          <div style="display:flex; gap:10px; align-items:end;">
-            <button id="refreshBtn">Refresh</button>
-            <button class="secondary" id="exportClientsBtn">Export Clients CSV</button>
-            <button class="secondary" id="exportSessionsBtn">Export Sessions CSV</button>
-          </div>
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <h1>CSM Sessions Dashboard</h1>
+          <div class="sub">Simple view of sessions, commitments, and overage — by month</div>
         </div>
+      </div>
 
-        <div class="status" id="status"><span class="dot" style="background:var(--accent)"></span><span>Ready</span></div>
+      <div class="inline">
+        <div class="pill" id="connectionPill"><span class="dot" id="connDot"></span><span id="connText">Connecting…</span></div>
+        <div class="pill"><span style="font-family:var(--mono)" id="lastRefreshed">Last refreshed: —</span></div>
       </div>
     </div>
 
-    <!-- OVERVIEW -->
-    <section id="overview" class="grid">
-      <div class="card kpi"><div class="t">Total Sessions</div><div class="v" id="k_totalSessions">—</div><div class="s">in period</div></div>
-      <div class="card kpi"><div class="t">Total Minutes</div><div class="v" id="k_totalMinutes">—</div><div class="s">in period</div></div>
-      <div class="card kpi"><div class="t">Avg Duration</div><div class="v" id="k_avg">—</div><div class="s">minutes/session</div></div>
-      <div class="card kpi"><div class="t">Unique Clients</div><div class="v" id="k_clients">—</div><div class="s">active clients</div></div>
+    <div class="controls">
+      <div>
+        <label>Billing month</label>
+        <select id="period"></select>
+      </div>
+      <div>
+        <label>From (optional)</label>
+        <input id="from" type="date"/>
+      </div>
+      <div>
+        <label>To (optional)</label>
+        <input id="to" type="date"/>
+      </div>
+      <div class="inline">
+        <button id="refreshBtn">Refresh</button>
+        <button id="exportClientsBtn" class="secondary">Export clients CSV</button>
+        <button id="exportSessionsBtn" class="secondary">Export sessions CSV</button>
+      </div>
+    </div>
+  </div>
+</header>
 
-      <div class="card kpi"><div class="t">Committed Minutes</div><div class="v" id="k_committed">—</div><div class="s">from Tab 2</div></div>
-      <div class="card kpi"><div class="t">Overage Minutes</div><div class="v" id="k_over">—</div><div class="s">consumed - committed</div></div>
-      <div class="card kpi"><div class="t">Overage Amount</div><div class="v" id="k_over_amt">—</div><div class="s">requires rate/hour column</div></div>
-      <div class="card kpi"><div class="t">API</div><div class="v" id="k_api">Connected</div><div class="s" id="k_api_s">Apps Script JSONP</div></div>
+<div class="wrap">
+  <!-- KPIs -->
+  <div class="grid">
+    <div class="card kpi">
+      <div class="t">Total sessions</div>
+      <div class="v" id="k_totalSessions"><div class="skeleton"></div></div>
+      <div class="s">How many sessions happened this month</div>
+    </div>
+    <div class="card kpi">
+      <div class="t">Total minutes</div>
+      <div class="v" id="k_totalMinutes"><div class="skeleton"></div></div>
+      <div class="s">Total delivery time</div>
+    </div>
+    <div class="card kpi">
+      <div class="t">Average duration</div>
+      <div class="v" id="k_avg"><div class="skeleton"></div></div>
+      <div class="s">Minutes per session</div>
+    </div>
+    <div class="card kpi">
+      <div class="t">Unique clients</div>
+      <div class="v" id="k_clients"><div class="skeleton"></div></div>
+      <div class="s">Clients active this month</div>
+    </div>
 
-      <div class="card span6">
-        <div class="titleRow">
-          <div>
-            <div class="title">Minutes per day</div>
-            <div class="subtitle">Sessions in selected period</div>
-          </div>
+    <div class="card kpi">
+      <div class="t">Committed minutes</div>
+      <div class="v" id="k_committed"><div class="skeleton"></div></div>
+      <div class="s">From “Tab 2” commitments</div>
+    </div>
+    <div class="card kpi">
+      <div class="t">Overage minutes</div>
+      <div class="v" id="k_over"><div class="skeleton"></div></div>
+      <div class="s">Consumed − committed (min 0)</div>
+    </div>
+    <div class="card kpi">
+      <div class="t">Overage amount</div>
+      <div class="v" id="k_over_amt"><div class="skeleton"></div></div>
+      <div class="s">Needs a rate/hour column (optional)</div>
+    </div>
+
+    <div class="card kpi">
+      <div class="t">Friendly tip</div>
+      <div class="v" style="font-size:16px; line-height:1.2;">Use “Needs attention”</div>
+      <div class="s">It highlights clients near or above their committed time.</div>
+    </div>
+
+    <!-- Charts -->
+    <div class="card span6">
+      <div class="sectionTitle">
+        <div>
+          <div class="title">Minutes per day</div>
+          <div class="subtitle">A quick visual to see busy days</div>
         </div>
-        <canvas id="chartDaily" height="120"></canvas>
+      </div>
+      <canvas id="chartDaily" height="120"></canvas>
+    </div>
+
+    <div class="card span6">
+      <div class="sectionTitle">
+        <div>
+          <div class="title">Top clients by minutes</div>
+          <div class="subtitle">Top 10 clients consuming the most time</div>
+        </div>
+      </div>
+      <canvas id="chartTopClients" height="120"></canvas>
+    </div>
+
+    <!-- Needs attention -->
+    <div class="card span12">
+      <div class="sectionTitle">
+        <div>
+          <div class="title">Needs attention</div>
+          <div class="subtitle">Clients close to their committed limit (≥80%) or already over (≥100%).</div>
+        </div>
+        <div class="pill">
+          <span class="dot good"></span><span>&lt; 80%</span>&nbsp;&nbsp;
+          <span class="dot warn"></span><span>80–99%</span>&nbsp;&nbsp;
+          <span class="dot bad"></span><span>≥ 100%</span>
+        </div>
+      </div>
+      <div id="attentionList" class="attentionList"></div>
+      <div id="attentionEmpty" class="subtitle" style="display:none;">
+        🎉 No clients are near the limit right now.
+      </div>
+    </div>
+
+    <!-- Clients table -->
+    <div class="card span12">
+      <div class="sectionTitle">
+        <div>
+          <div class="title">Clients</div>
+          <div class="subtitle">Search, sort, and export. Utilization = consumed / committed.</div>
+        </div>
+        <div class="inline">
+          <input id="clientSearch" placeholder="Search by client or CSM…" />
+          <button id="clearClientSearch" class="secondary">Clear</button>
+        </div>
+      </div>
+      <div class="tableWrap">
+        <div id="clientsTable"></div>
+      </div>
+    </div>
+
+    <!-- Sessions table -->
+    <div class="card span12">
+      <div class="sectionTitle">
+        <div>
+          <div class="title">Sessions</div>
+          <div class="subtitle">Filtered by month + optional date range. Open the PDF brief when available.</div>
+        </div>
+        <div class="inline">
+          <input id="sessionSearch" placeholder="Search by client, account, CSM, contact…" />
+          <button id="clearSessionSearch" class="secondary">Clear</button>
+        </div>
+      </div>
+      <div class="tableWrap">
+        <div id="sessionsTable"></div>
       </div>
 
-      <div class="card span6">
-        <div class="titleRow">
-          <div>
-            <div class="title">Top clients by minutes</div>
-            <div class="subtitle">Top 10</div>
-          </div>
-        </div>
-        <canvas id="chartTopClients" height="120"></canvas>
+      <div id="friendlyError" class="subtitle" style="display:none; margin-top:10px;">
+        If you see “JSON timeout”, your Web App is probably not returning JSONP.
+        Open this link and make sure it starts with <span style="font-family:var(--mono)">TEST(</span>:
+        <br/>
+        <span style="font-family:var(--mono); color:var(--primary2);" id="jsonpTestLink"></span>
       </div>
-    </section>
+    </div>
 
-    <!-- CLIENTS -->
-    <section id="clients" class="grid" style="margin-top:12px;">
-      <div class="card span12">
-        <div class="titleRow">
-          <div>
-            <div class="title">Clients</div>
-            <div class="subtitle">Search, sort, paginate. Utilization/overage computed from Sessions + Tab 2 commitments.</div>
-          </div>
-          <div class="search">
-            <input id="clientSearch" placeholder="Search clients..." />
-            <button class="secondary" id="clearClientSearch">Clear</button>
-          </div>
-        </div>
-        <div class="tableWrap">
-          <div id="clientsTable"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- SESSIONS -->
-    <section id="sessions" class="grid" style="margin-top:12px;">
-      <div class="card span12">
-        <div class="titleRow">
-          <div>
-            <div class="title">Sessions</div>
-            <div class="subtitle">Filtered by period + optional date range. Click “Open” to view PDF brief.</div>
-          </div>
-          <div class="search">
-            <input id="sessionSearch" placeholder="Search sessions..." />
-            <button class="secondary" id="clearSessionSearch">Clear</button>
-          </div>
-        </div>
-        <div class="tableWrap">
-          <div id="sessionsTable"></div>
-        </div>
-      </div>
-    </section>
-
-  </main>
+  </div>
 </div>
 
 <script>
   /*********************************************************
-   * ✅ YOUR APPS SCRIPT /exec URL (hardcoded)
+   * ✅ Your Apps Script /exec URL (hardcoded)
    *********************************************************/
   const API_URL = "https://script.google.com/macros/s/AKfycbzeiw45H5PVs8_91N8x-u-COmmhzotE41vGgy40-NtEO6vKEMwNgott4VQ0SRy5WZf_/exec";
 
   const els = {
-    period: document.getElementById('period'),
-    from: document.getElementById('from'),
-    to: document.getElementById('to'),
-    refreshBtn: document.getElementById('refreshBtn'),
-    status: document.getElementById('status'),
+    period: document.getElementById("period"),
+    from: document.getElementById("from"),
+    to: document.getElementById("to"),
+    refreshBtn: document.getElementById("refreshBtn"),
+    exportClientsBtn: document.getElementById("exportClientsBtn"),
+    exportSessionsBtn: document.getElementById("exportSessionsBtn"),
 
-    k_totalSessions: document.getElementById('k_totalSessions'),
-    k_totalMinutes: document.getElementById('k_totalMinutes'),
-    k_avg: document.getElementById('k_avg'),
-    k_clients: document.getElementById('k_clients'),
-    k_committed: document.getElementById('k_committed'),
-    k_over: document.getElementById('k_over'),
-    k_over_amt: document.getElementById('k_over_amt'),
-    k_api: document.getElementById('k_api'),
-    k_api_s: document.getElementById('k_api_s'),
+    connectionPill: document.getElementById("connectionPill"),
+    connDot: document.getElementById("connDot"),
+    connText: document.getElementById("connText"),
+    lastRefreshed: document.getElementById("lastRefreshed"),
 
-    clientSearch: document.getElementById('clientSearch'),
-    sessionSearch: document.getElementById('sessionSearch'),
-    clearClientSearch: document.getElementById('clearClientSearch'),
-    clearSessionSearch: document.getElementById('clearSessionSearch'),
+    k_totalSessions: document.getElementById("k_totalSessions"),
+    k_totalMinutes: document.getElementById("k_totalMinutes"),
+    k_avg: document.getElementById("k_avg"),
+    k_clients: document.getElementById("k_clients"),
+    k_committed: document.getElementById("k_committed"),
+    k_over: document.getElementById("k_over"),
+    k_over_amt: document.getElementById("k_over_amt"),
 
-    exportClientsBtn: document.getElementById('exportClientsBtn'),
-    exportSessionsBtn: document.getElementById('exportSessionsBtn'),
+    attentionList: document.getElementById("attentionList"),
+    attentionEmpty: document.getElementById("attentionEmpty"),
+
+    clientSearch: document.getElementById("clientSearch"),
+    sessionSearch: document.getElementById("sessionSearch"),
+    clearClientSearch: document.getElementById("clearClientSearch"),
+    clearSessionSearch: document.getElementById("clearSessionSearch"),
+
+    friendlyError: document.getElementById("friendlyError"),
+    jsonpTestLink: document.getElementById("jsonpTestLink"),
   };
 
-  let charts = { daily:null, topClients:null };
-  let tables = { clients:null, sessions:null };
-  let state = { summary:null, sessions:[], clients:[] };
+  let charts = { daily: null, topClients: null };
+  let tables = { clients: null, sessions: null };
+  let state = { summary: null, clients: [], sessions: [] };
 
-  function setStatus(msg, isError=false){
-    els.status.className = 'status' + (isError ? ' err' : '');
-    els.status.innerHTML = `<span class="dot" style="background:${isError ? 'var(--bad)' : 'var(--accent)'}"></span><span>${escapeHtml(msg)}</span>`;
+  const fmtInt = (n)=> (n ?? 0).toLocaleString();
+  const fmt1 = (n)=> (n ?? 0).toLocaleString(undefined,{maximumFractionDigits:1});
+  const fmt2 = (n)=> (n ?? 0).toLocaleString(undefined,{maximumFractionDigits:2});
+  const fmtPct = (x)=> (x==null ? "—" : (x*100).toFixed(1) + "%");
+
+  function todayPeriod(){
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");
+  }
+
+  function setConnection(stateName, message){
+    // stateName: "ok" | "warn" | "bad"
+    els.connDot.className = "dot " + (stateName === "ok" ? "good" : stateName === "warn" ? "warn" : "bad");
+    els.connText.textContent = message;
+  }
+
+  function setKPI(el, value){
+    el.textContent = value;
   }
 
   function jsonp(url){
     return new Promise((resolve, reject) => {
-      const cb = 'cb_' + Math.random().toString(36).slice(2);
-      const s = document.createElement('script');
-      const sep = url.includes('?') ? '&' : '?';
-      const bust = `__ts=${Date.now()}`;
-      s.src = url + sep + bust + '&callback=' + cb;
+      const cb = "cb_" + Math.random().toString(36).slice(2);
+      const s = document.createElement("script");
+      const sep = url.includes("?") ? "&" : "?";
+      // cache-buster
+      s.src = url + sep + "__ts=" + Date.now() + "&callback=" + cb;
       s.async = true;
 
-      const t = setTimeout(() => { cleanup(); reject(new Error('JSON timeout (callback not executed).')); }, 20000);
+      const t = setTimeout(() => { cleanup(); reject(new Error("JSON timeout")); }, 20000);
 
       window[cb] = (data) => { cleanup(); resolve(data); };
 
       function cleanup(){
         clearTimeout(t);
-        try { delete window[cb]; } catch(e){}
+        try{ delete window[cb]; } catch(e){}
         s.remove();
       }
-      s.onerror = () => { cleanup(); reject(new Error('JSONP load error (script blocked or endpoint not public).')); };
 
+      s.onerror = () => { cleanup(); reject(new Error("JSONP load error")); };
       document.head.appendChild(s);
     });
   }
 
-  function escapeHtml(s){
-    return String(s ?? '')
-      .replaceAll('&','&amp;')
-      .replaceAll('<','&lt;')
-      .replaceAll('>','&gt;')
-      .replaceAll('"','&quot;')
-      .replaceAll("'","&#039;");
-  }
-
-  const fmtInt = (n)=> (n ?? 0).toLocaleString();
-  const fmt1   = (n)=> (n ?? 0).toLocaleString(undefined,{maximumFractionDigits:1});
-  const fmt2   = (n)=> (n ?? 0).toLocaleString(undefined,{maximumFractionDigits:2});
-  const fmtPct = (x)=> (x==null ? '—' : (x*100).toFixed(1)+'%');
-
-  function todayPeriod(){
-    const d = new Date();
-    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
-  }
-
   async function loadPeriods(){
-    const res = await jsonp(API_URL + '?action=periods');
-    if (!res.ok) throw new Error(res.error || 'Failed to load periods');
+    const res = await jsonp(API_URL + "?action=periods");
+    if (!res.ok) throw new Error(res.error || "Could not load periods");
+
     const periods = res.periods || [];
-    els.period.innerHTML = '';
+    els.period.innerHTML = "";
     periods.forEach(p => {
-      const opt = document.createElement('option');
-      opt.value = p; opt.textContent = p;
+      const opt = document.createElement("option");
+      opt.value = p;
+      opt.textContent = p;
       els.period.appendChild(opt);
     });
     els.period.value = periods[0] || todayPeriod();
   }
 
   async function refreshAll(){
+    els.friendlyError.style.display = "none";
+
     const period = els.period.value || todayPeriod();
     const from = els.from.value;
     const to = els.to.value;
 
-    setStatus('Loading…');
+    setConnection("warn", "Loading data…");
 
     const summaryP = jsonp(API_URL + `?action=summary&period=${encodeURIComponent(period)}`);
     const sessionsUrl = API_URL + `?action=sessions&period=${encodeURIComponent(period)}`
-      + (from ? `&from=${encodeURIComponent(from)}` : '')
-      + (to ? `&to=${encodeURIComponent(to)}` : '');
+      + (from ? `&from=${encodeURIComponent(from)}` : "")
+      + (to ? `&to=${encodeURIComponent(to)}` : "");
     const sessionsP = jsonp(sessionsUrl);
 
     const [summary, sessionsRes] = await Promise.all([summaryP, sessionsP]);
-    if (!summary.ok) throw new Error(summary.error || 'Summary error');
-    if (!sessionsRes.ok) throw new Error(sessionsRes.error || 'Sessions error');
+    if (!summary.ok) throw new Error(summary.error || "Summary error");
+    if (!sessionsRes.ok) throw new Error(sessionsRes.error || "Sessions error");
 
     state.summary = summary;
     state.clients = summary.clients || [];
     state.sessions = sessionsRes.sessions || [];
-    renderAll();
 
-    els.k_api.textContent = "Connected";
-    els.k_api_s.textContent = "Apps Script JSONP OK";
-    setStatus('Loaded');
-  }
-
-  function renderAll(){
-    const t = state.summary?.totals || {};
-    els.k_totalSessions.textContent = fmtInt(t.totalSessions);
-    els.k_totalMinutes.textContent  = fmtInt(t.totalMinutes);
-    els.k_avg.textContent           = fmt1(t.avgDurationMinutes);
-    els.k_clients.textContent       = fmtInt(t.uniqueClients);
-    els.k_committed.textContent     = fmtInt(t.totalCommittedMinutes);
-    els.k_over.textContent          = fmtInt(t.totalOverageMinutes);
-    els.k_over_amt.textContent      = fmt2(t.totalOverageAmount);
-
+    renderKPIs();
+    renderAttention();
     renderCharts();
     renderTables();
+
+    const now = new Date();
+    els.lastRefreshed.textContent = "Last refreshed: " + now.toLocaleString();
+    setConnection("ok", "Connected");
+  }
+
+  function renderKPIs(){
+    const t = state.summary?.totals || {};
+    setKPI(els.k_totalSessions, fmtInt(t.totalSessions));
+    setKPI(els.k_totalMinutes, fmtInt(t.totalMinutes));
+    setKPI(els.k_avg, fmt1(t.avgDurationMinutes));
+    setKPI(els.k_clients, fmtInt(t.uniqueClients));
+    setKPI(els.k_committed, fmtInt(t.totalCommittedMinutes));
+    setKPI(els.k_over, fmtInt(t.totalOverageMinutes));
+    setKPI(els.k_over_amt, fmt2(t.totalOverageAmount));
+  }
+
+  function utilClass(util){
+    if (util == null) return "good";
+    if (util >= 1.0) return "bad";
+    if (util >= 0.8) return "warn";
+    return "good";
+  }
+
+  function renderAttention(){
+    const clients = [...(state.clients || [])]
+      .filter(c => c.utilization != null && c.committedMinutes > 0)
+      .sort((a,b) => (b.utilization - a.utilization))
+      .filter(c => c.utilization >= 0.8)
+      .slice(0, 8);
+
+    els.attentionList.innerHTML = "";
+    els.attentionEmpty.style.display = clients.length ? "none" : "block";
+
+    clients.forEach(c => {
+      const cls = utilClass(c.utilization);
+      const pct = Math.min((c.utilization * 100), 140);
+      const item = document.createElement("div");
+      item.className = "attentionItem";
+      item.innerHTML = `
+        <div class="left">
+          <span class="dot ${cls}"></span>
+          <div style="min-width:0;">
+            <div class="name">${escapeHtml(c.client)}</div>
+            <div class="meta">
+              ${fmtInt(c.consumedMinutes)} / ${fmtInt(c.committedMinutes)} minutes •
+              ${escapeHtml(c.primaryCsm || "No CSM")}
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div class="bar"><div style="width:${pct}%; background:${cls==="bad"?"var(--bad)":cls==="warn"?"var(--warn)":"var(--good)"};"></div></div>
+          <div style="width:66px; text-align:right; font-family:var(--mono); color:var(--muted);">
+            ${fmtPct(c.utilization)}
+          </div>
+        </div>
+      `;
+      els.attentionList.appendChild(item);
+    });
   }
 
   function renderCharts(){
     const daily = state.summary?.daily || [];
     const top = state.summary?.topClients || [];
 
+    // Daily
     const dLabels = daily.map(x => x.date);
     const dData = daily.map(x => x.minutes);
 
     if (charts.daily) charts.daily.destroy();
-    charts.daily = new Chart(document.getElementById('chartDaily'), {
-      type: 'line',
-      data: { labels: dLabels, datasets: [{ label: 'Minutes', data: dData, tension: 0.25 }] },
-      options: {
-        responsive:true,
-        plugins:{ legend:{ display:false } },
-        scales:{
-          x:{ ticks:{ color:'rgba(170,180,214,.85)' }, grid:{ color:'rgba(255,255,255,.06)' } },
-          y:{ ticks:{ color:'rgba(170,180,214,.85)' }, grid:{ color:'rgba(255,255,255,.06)' } },
-        }
-      }
+    charts.daily = new Chart(document.getElementById("chartDaily"), {
+      type: "line",
+      data: { labels: dLabels, datasets: [{ label:"Minutes", data: dData, tension: 0.25 }] },
+      options: { responsive:true, plugins:{ legend:{ display:false } } }
     });
 
+    // Top clients
     const cLabels = top.map(x => x.client);
     const cData = top.map(x => x.consumedMinutes);
 
     if (charts.topClients) charts.topClients.destroy();
-    charts.topClients = new Chart(document.getElementById('chartTopClients'), {
-      type: 'bar',
-      data: { labels: cLabels, datasets: [{ label: 'Minutes', data: cData }] },
-      options: {
-        responsive:true,
-        plugins:{ legend:{ display:false } },
-        scales:{
-          x:{ ticks:{ color:'rgba(170,180,214,.85)' }, grid:{ color:'rgba(255,255,255,.06)' } },
-          y:{ ticks:{ color:'rgba(170,180,214,.85)' }, grid:{ color:'rgba(255,255,255,.06)' } },
-        }
-      }
+    charts.topClients = new Chart(document.getElementById("chartTopClients"), {
+      type: "bar",
+      data: { labels: cLabels, datasets: [{ label:"Minutes", data: cData }] },
+      options: { responsive:true, plugins:{ legend:{ display:false } } }
     });
   }
 
   function renderTables(){
     // Clients table
-    const clientsData = state.clients.map(c => ({
+    const clientsData = (state.clients || []).map(c => ({
       client: c.client,
       locations: c.locations,
       committed: c.committedMinutes,
       consumed: c.consumedMinutes,
-      util: c.utilization,
+      utilization: c.utilization,
       overage: c.overageMinutes,
       sessions: c.sessionsCount,
       last: c.lastSessionDate,
@@ -553,8 +716,7 @@
       currency: c.currency
     }));
 
-    if (tables.clients) tables.clients.replaceData(clientsData);
-    else {
+    if (!tables.clients){
       tables.clients = new Tabulator("#clientsTable", {
         data: clientsData,
         layout: "fitColumns",
@@ -565,38 +727,42 @@
         resizableColumns: true,
         columns: [
           {title:"Client", field:"client", minWidth:220, headerFilter:true},
-          {title:"Locations", field:"locations", hozAlign:"right", sorter:"number"},
-          {title:"Committed", field:"committed", hozAlign:"right", sorter:"number"},
-          {title:"Consumed", field:"consumed", hozAlign:"right", sorter:"number"},
+          {title:"Locations", field:"locations", sorter:"number", hozAlign:"right"},
+          {title:"Committed", field:"committed", sorter:"number", hozAlign:"right"},
+          {title:"Consumed", field:"consumed", sorter:"number", hozAlign:"right"},
           {
-            title:"Util%",
-            field:"util",
-            hozAlign:"right",
+            title:"Utilization",
+            field:"utilization",
             sorter:"number",
+            hozAlign:"left",
             formatter:(cell)=>{
               const v = cell.getValue();
-              if (v === null || v === undefined) return "—";
-              const pct = (v*100);
+              if (v == null) return "—";
+              const pct = v * 100;
               const cls = v >= 1 ? "bad" : (v >= 0.8 ? "warn" : "good");
               const color = cls === "bad" ? "var(--bad)" : (cls === "warn" ? "var(--warn)" : "var(--good)");
-              return `<div style="display:flex; align-items:center; justify-content:flex-end; gap:10px;">
-                        <div style="width:110px; height:8px; border:1px solid rgba(255,255,255,.14); border-radius:999px; overflow:hidden;">
-                          <div style="height:100%; width:${Math.min(pct,120)}%; background:${color};"></div>
-                        </div>
-                        <div style="min-width:60px; text-align:right;">${pct.toFixed(1)}%</div>
-                      </div>`;
+              return `
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span class="dot ${cls}"></span>
+                  <div style="flex:1; min-width:120px; height:10px; border-radius:999px; background:rgba(15,23,42,.06); overflow:hidden;">
+                    <div style="height:100%; width:${Math.min(pct,140)}%; background:${color};"></div>
+                  </div>
+                  <div style="width:66px; text-align:right; font-family:var(--mono); color:var(--muted);">${pct.toFixed(1)}%</div>
+                </div>`;
             }
           },
-          {title:"Overage", field:"overage", hozAlign:"right", sorter:"number"},
-          {title:"# Sessions", field:"sessions", hozAlign:"right", sorter:"number"},
+          {title:"Overage", field:"overage", sorter:"number", hozAlign:"right"},
+          {title:"# Sessions", field:"sessions", sorter:"number", hozAlign:"right"},
           {title:"Last session", field:"last", sorter:"string"},
           {title:"Primary CSM", field:"csm", sorter:"string"},
         ],
       });
+    } else {
+      tables.clients.replaceData(clientsData);
     }
 
     // Sessions table
-    const sessionsData = state.sessions.map(s => ({
+    const sessionsData = (state.sessions || []).map(s => ({
       date: s.date,
       client: s.client,
       account: s.account,
@@ -608,8 +774,7 @@
       notes: s.notes
     }));
 
-    if (tables.sessions) tables.sessions.replaceData(sessionsData);
-    else {
+    if (!tables.sessions){
       tables.sessions = new Tabulator("#sessionsTable", {
         data: sessionsData,
         layout: "fitColumns",
@@ -620,11 +785,11 @@
         resizableColumns: true,
         columns: [
           {title:"Date", field:"date", width:120, sorter:"string", headerFilter:true},
-          {title:"Client", field:"client", minWidth:180, headerFilter:true},
+          {title:"Client", field:"client", minWidth:170, headerFilter:true},
           {title:"Account", field:"account", minWidth:160, headerFilter:true},
           {title:"CSM", field:"csm", width:160, headerFilter:true},
-          {title:"Minutes", field:"minutes", hozAlign:"right", sorter:"number"},
-          {title:"Attendees", field:"attendees", hozAlign:"right", sorter:"number"},
+          {title:"Minutes", field:"minutes", sorter:"number", hozAlign:"right"},
+          {title:"Attendees", field:"attendees", sorter:"number", hozAlign:"right"},
           {title:"Main Contact", field:"contact", minWidth:160, headerFilter:true},
           {
             title:"Brief",
@@ -634,17 +799,41 @@
               const url = cell.getValue();
               if (!url) return "";
               const safe = escapeHtml(url);
-              return `<a href="${safe}" target="_blank" rel="noopener" style="color:var(--accent); font-weight:700;">Open</a>`;
+              return `<a href="${safe}" target="_blank" rel="noopener" style="font-weight:800;">Open</a>`;
             }
           },
           {title:"Notes", field:"notes", minWidth:260},
         ],
       });
+    } else {
+      tables.sessions.replaceData(sessionsData);
     }
+
+    applyClientSearch();
+    applySessionSearch();
+  }
+
+  function applyClientSearch(){
+    const q = els.clientSearch.value.trim().toLowerCase();
+    if (!tables.clients) return;
+    if (!q) { tables.clients.clearFilter(true); return; }
+    tables.clients.setFilter((row)=>{
+      return (row.client||"").toLowerCase().includes(q) || (row.csm||"").toLowerCase().includes(q);
+    });
+  }
+
+  function applySessionSearch(){
+    const q = els.sessionSearch.value.trim().toLowerCase();
+    if (!tables.sessions) return;
+    if (!q) { tables.sessions.clearFilter(true); return; }
+    tables.sessions.setFilter((row)=>{
+      const hay = [row.date,row.client,row.account,row.csm,row.contact,row.notes].join(" ").toLowerCase();
+      return hay.includes(q);
+    });
   }
 
   function downloadCSV(filename, rows){
-    const esc = (v)=> `"${String(v ?? '').replaceAll('"','""')}"`;
+    const esc = (v)=> `"${String(v ?? "").replaceAll('"','""')}"`;
     const csv = rows.map(r => r.map(esc).join(",")).join("\n");
     const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
     const url = URL.createObjectURL(blob);
@@ -656,61 +845,39 @@
   }
 
   function exportClientsCSV(){
-    const rows = [
-      ["Client","Locations","CommittedMinutes","ConsumedMinutes","Utilization","OverageMinutes","SessionsCount","LastSessionDate","PrimaryCSM"]
-    ];
-    for (const c of state.clients){
-      rows.push([
-        c.client, c.locations, c.committedMinutes, c.consumedMinutes, c.utilization, c.overageMinutes,
-        c.sessionsCount, c.lastSessionDate, c.primaryCsm
-      ]);
+    const rows = [["Client","Locations","CommittedMinutes","ConsumedMinutes","Utilization","OverageMinutes","#Sessions","LastSession","PrimaryCSM"]];
+    for (const c of (state.clients || [])){
+      rows.push([c.client, c.locations, c.committedMinutes, c.consumedMinutes, c.utilization, c.overageMinutes, c.sessionsCount, c.lastSessionDate, c.primaryCsm]);
     }
     downloadCSV("clients.csv", rows);
   }
 
   function exportSessionsCSV(){
-    const rows = [
-      ["Date","Client","Account","CSM","Minutes","Attendees","MainContact","BriefURL","Notes"]
-    ];
-    for (const s of state.sessions){
+    const rows = [["Date","Client","Account","CSM","Minutes","Attendees","MainContact","BriefURL","Notes"]];
+    for (const s of (state.sessions || [])){
       rows.push([s.date, s.client, s.account, s.csm, s.durationMinutes, s.attendees, s.mainContact, s.briefUrl, s.notes]);
     }
     downloadCSV("sessions.csv", rows);
   }
 
-  // Search filters
-  function applyClientSearch(){
-    const q = els.clientSearch.value.trim().toLowerCase();
-    if (!tables.clients) return;
-    if (!q) { tables.clients.clearFilter(true); return; }
-    tables.clients.setFilter((data)=>{
-      return (data.client||"").toLowerCase().includes(q) || (data.csm||"").toLowerCase().includes(q);
-    });
-  }
-  function applySessionSearch(){
-    const q = els.sessionSearch.value.trim().toLowerCase();
-    if (!tables.sessions) return;
-    if (!q) { tables.sessions.clearFilter(true); return; }
-    tables.sessions.setFilter((data)=>{
-      const hay = [data.date,data.client,data.account,data.csm,data.contact,data.notes].join(" ").toLowerCase();
-      return hay.includes(q);
-    });
-  }
-
-  // Nav highlight
-  function setActiveNav(hash){
-    document.getElementById("navOverview").classList.toggle("active", hash === "#overview" || hash === "");
-    document.getElementById("navClients").classList.toggle("active", hash === "#clients");
-    document.getElementById("navSessions").classList.toggle("active", hash === "#sessions");
+  function escapeHtml(s){
+    return String(s ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
   }
 
   // Events
   els.refreshBtn.addEventListener("click", async ()=>{
     try{ await refreshAll(); }
     catch(e){
-      els.k_api.textContent = "Error";
-      els.k_api_s.textContent = "Check deployment access / JSONP test";
-      setStatus(e.message || String(e), true);
+      setConnection("bad", "Couldn’t load data");
+      els.friendlyError.style.display = "block";
+      const link = API_URL + "?action=periods&callback=TEST";
+      els.jsonpTestLink.textContent = link;
+      els.jsonpTestLink.onclick = () => window.open(link, "_blank");
     }
   });
   els.period.addEventListener("change", ()=> els.refreshBtn.click());
@@ -721,22 +888,23 @@
   els.exportClientsBtn.addEventListener("click", exportClientsCSV);
   els.exportSessionsBtn.addEventListener("click", exportSessionsCSV);
 
-  window.addEventListener("hashchange", ()=> setActiveNav(location.hash));
-  setActiveNav(location.hash);
-
   // Init
   (async function init(){
     try{
+      setConnection("warn", "Connecting…");
       await loadPeriods();
       await refreshAll();
     } catch(e){
-      els.k_api.textContent = "Error";
-      els.k_api_s.textContent = "Open: …/exec?action=periods&callback=TEST";
-      setStatus(e.message || String(e), true);
-      // fallback
+      setConnection("bad", "Connection needs fixing");
+      els.friendlyError.style.display = "block";
+      const link = API_URL + "?action=periods&callback=TEST";
+      els.jsonpTestLink.textContent = link;
+      els.jsonpTestLink.onclick = () => window.open(link, "_blank");
+      // fallback period
       els.period.innerHTML = `<option value="${todayPeriod()}">${todayPeriod()}</option>`;
     }
   })();
 </script>
+
 </body>
 </html>
