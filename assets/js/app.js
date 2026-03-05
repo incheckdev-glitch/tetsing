@@ -1,395 +1,351 @@
-(() => {
-  const { WEBAPP_EXEC_URL, DEFAULT_URGENT_TOP_N } = window.APP_CONFIG;
-  const U = window.Utils;
+/**
+ * InCheck Lite Session Tracker API (Robust header matching)
+ * Spreadsheet file name: "InCheck Lite Session Tracker"
+ *
+ * Endpoints:
+ *  GET     /exec?action=summary
+ *  GET     /exec?action=health
+ *  POST    /exec?key=YOUR_KEY   (JSON body)
+ *  OPTIONS /exec                (CORS preflight)
+ */
 
-  const els = {
-    year: document.getElementById("year"),
-    buildInfo: document.getElementById("buildInfo"),
-    statusDot: document.getElementById("statusDot"),
-    lastUpdatedText: document.getElementById("lastUpdatedText"),
-    thresholdHint: document.getElementById("thresholdHint"),
+const SPREADSHEET_NAME = "InCheck Lite Session Tracker";
 
-    kpiOver: document.getElementById("kpiOver"),
-    kpiNear: document.getElementById("kpiNear"),
-    kpiOk: document.getElementById("kpiOk"),
-    kpiNoCommit: document.getElementById("kpiNoCommit"),
+// Required headers (logical names). Actual sheet headers may differ by case/spaces; we normalize.
+const REQUIRED_RESPONSE_HEADERS = [
+  "Timestamp",
+  "CSM In charge",
+  "CLIENT",
+  "Account name",
+  "Number of attendees",
+  "Main Contact Name",
+  "Date of Session",
+  "Duration of session (Minutes)",
+  "Upload Post-session brief (PDF)",
+  "Additional notes"
+];
 
-    btnRefresh: document.getElementById("btnRefresh"),
-    btnExportCsv: document.getElementById("btnExportCsv"),
-    btnResetFilters: document.getElementById("btnResetFilters"),
+// Commitments tab and headers
+const SHEET_COMMIT = "Commitments";
+const COMMIT_HEADERS = ["CLIENT", "Account name", "Committed Minutes"];
 
-    searchInput: document.getElementById("searchInput"),
-    statusSelect: document.getElementById("statusSelect"),
-    clientSelect: document.getElementById("clientSelect"),
-    sortSelect: document.getElementById("sortSelect"),
-    pageSizeSelect: document.getElementById("pageSizeSelect"),
+// API key stored in Script Properties
+const API_KEY_PROP = "DASH_API_KEY";
 
-    resultCount: document.getElementById("resultCount"),
-    tableBody: document.getElementById("tableBody"),
+// Near-limit threshold in minutes (120 = 2 hours)
+const NEAR_LIMIT_THRESHOLD_MIN = 120;
 
-    btnPrev: document.getElementById("btnPrev"),
-    btnNext: document.getElementById("btnNext"),
-    pageMeta: document.getElementById("pageMeta"),
+/** -----------------------------
+ * HTTP handlers
+ * ----------------------------- */
+function doGet(e) {
+  const action = (((e || {}).parameter || {}).action || "summary").toLowerCase();
+
+  if (action === "summary") {
+    return jsonOutput_(buildSummary_());
+  }
+
+  if (action === "health") {
+    const ss = getSpreadsheet_();
+    const respSheet = findResponseSheet_();
+    const commitSheet = getOrCreateCommitmentsSheet_();
+
+    // Validate (robust) so health tells you immediately if something is off
+    assertHeaders_(respSheet, REQUIRED_RESPONSE_HEADERS);
+    ensureHeaders_(commitSheet, COMMIT_HEADERS);
+
+    return jsonOutput_({
+      ok: true,
+      spreadsheet: ss.getName(),
+      responseSheet: respSheet.getName(),
+      commitmentsSheet: commitSheet.getName()
+    });
+  }
+
+  return jsonOutput_({ error: "Unknown action" }, 400);
+}
+
+function doPost(e) {
+  const apiKey = getApiKey_();
+  const payload = safeJson_((e && e.postData && e.postData.contents) || "");
+
+  // Key can be provided via query string (?key=) OR JSON body {"key": "..."}
+  const providedKey = (((e || {}).parameter || {}).key) || (payload && payload.key);
+
+  if (!apiKey || providedKey !== apiKey) {
+    return jsonOutput_({ error: "Unauthorized" }, 401);
+  }
+  if (!payload) {
+    return jsonOutput_({ error: "Invalid JSON" }, 400);
+  }
+
+  const sh = findResponseSheet_();
+
+  // Validate headers (do not auto-modify response sheet)
+  assertHeaders_(sh, REQUIRED_RESPONSE_HEADERS);
+
+  // To append a row correctly even if header order differs,
+  // we build the row as a full-width row and place values by header index.
+  const headerRow = getHeaderRow_(sh);
+  const idx = indexMap_(headerRow);
+  const H = (name) => idx[normalizeHeader_(name)];
+
+  const row = new Array(headerRow.length).fill("");
+
+  row[H("Timestamp")] = new Date();
+  row[H("CSM In charge")] = payload.csm || "";
+  row[H("CLIENT")] = payload.client || "";
+  row[H("Account name")] = payload.account || "";
+  row[H("Number of attendees")] = Number(payload.attendees || 0);
+  row[H("Main Contact Name")] = payload.mainContact || "";
+  row[H("Date of Session")] = payload.sessionDate ? new Date(payload.sessionDate) : "";
+  row[H("Duration of session (Minutes)")] = Number(payload.durationMinutes || 0);
+  row[H("Upload Post-session brief (PDF)")] = payload.pdfUrl || "";
+  row[H("Additional notes")] = payload.notes || "";
+
+  sh.appendRow(row);
+
+  return jsonOutput_({ ok: true });
+}
+
+/**
+ * CORS preflight handler for browser-based requests (GitHub Pages).
+ * Note: some Apps Script environments may not invoke doOptions; GET often still works.
+ */
+function doOptions(e) {
+  return corsTextOutput_("");
+}
+
+/** -----------------------------
+ * Summary builder
+ * ----------------------------- */
+function buildSummary_() {
+  const respSheet = findResponseSheet_();
+  const commitSheet = getOrCreateCommitmentsSheet_();
+
+  // Responses sheet: validate headers (robust)
+  assertHeaders_(respSheet, REQUIRED_RESPONSE_HEADERS);
+
+  // Commitments sheet: ensure headers (safe to auto-create/append here)
+  ensureHeaders_(commitSheet, COMMIT_HEADERS);
+
+  const respValues = respSheet.getDataRange().getValues();
+  const commitValues = commitSheet.getDataRange().getValues();
+
+  const respHeader = respValues[0].map(v => (v ?? "").toString());
+  const idx = indexMap_(respHeader);
+  const H = (name) => idx[normalizeHeader_(name)];
+
+  const commitHeader = commitValues[0].map(v => (v ?? "").toString());
+  const cidx = indexMap_(commitHeader);
+  const CH = (name) => cidx[normalizeHeader_(name)];
+
+  // Commit map: key = client||account => committedMinutes
+  const commitMap = new Map();
+  for (let i = 1; i < commitValues.length; i++) {
+    const client = (commitValues[i][CH("CLIENT")] || "").toString().trim();
+    const account = (commitValues[i][CH("Account name")] || "").toString().trim();
+    const committed = Number(commitValues[i][CH("Committed Minutes")] || 0);
+    if (!client || !account) continue;
+    commitMap.set(`${client}||${account}`, committed);
+  }
+
+  // Used minutes map from responses
+  const usedMap = new Map();
+  for (let i = 1; i < respValues.length; i++) {
+    const client = (respValues[i][H("CLIENT")] || "").toString().trim();
+    const account = (respValues[i][H("Account name")] || "").toString().trim();
+    const dur = Number(respValues[i][H("Duration of session (Minutes)")] || 0);
+
+    if (!client || !account) continue;
+
+    const key = `${client}||${account}`;
+    usedMap.set(key, (usedMap.get(key) || 0) + dur);
+  }
+
+  // Merge keys
+  const keys = new Set([...commitMap.keys(), ...usedMap.keys()]);
+  const rows = [];
+
+  keys.forEach(key => {
+    const parts = key.split("||");
+    const client = parts[0] || "";
+    const account = parts[1] || "";
+
+    const committed = commitMap.get(key) || 0;
+    const used = usedMap.get(key) || 0;
+    const remaining = committed - used;
+
+    const status =
+      committed === 0 ? "NO COMMIT SET" :
+      remaining < 0 ? "OVER LIMIT" :
+      remaining <= NEAR_LIMIT_THRESHOLD_MIN ? "NEAR LIMIT" :
+      "OK";
+
+    rows.push({ client, account, committed, used, remaining, status });
+  });
+
+  // Sort by urgency (lowest remaining first)
+  rows.sort((a, b) => a.remaining - b.remaining);
+
+  return {
+    generatedAt: new Date().toISOString(),
+    thresholdNearLimitMinutes: NEAR_LIMIT_THRESHOLD_MIN,
+    counts: {
+      over: rows.filter(r => r.status === "OVER LIMIT").length,
+      near: rows.filter(r => r.status === "NEAR LIMIT").length,
+      ok: rows.filter(r => r.status === "OK").length,
+      noCommit: rows.filter(r => r.status === "NO COMMIT SET").length
+    },
+    rows
   };
+}
 
-  const state = {
-    raw: [],
-    filtered: [],
-    clients: [],
-    threshold: 120,
-    page: 1,
-    pageSize: 25,
-    sort: "remainingAsc",
-    search: "",
-    status: "ALL",
-    client: "ALL",
-    charts: { urgent: null, status: null },
-    tableSortOverride: null, // for clicking column headers
-  };
+/** -----------------------------
+ * Spreadsheet helpers
+ * ----------------------------- */
+function getSpreadsheet_() {
+  // If bound script, active spreadsheet is best
+  try {
+    const active = SpreadsheetApp.getActiveSpreadsheet();
+    if (active && active.getName() === SPREADSHEET_NAME) return active;
+  } catch (e) {}
 
-  const API_SUMMARY = () => `${WEBAPP_EXEC_URL}?action=summary`;
-
-  function setStatus(mode) {
-    // modes: idle, loading, ok, error
-    const dot = els.statusDot;
-    dot.classList.remove("dot--idle","dot--loading","dot--ok","dot--error");
-    dot.classList.add(`dot--${mode}`);
+  // Otherwise find by name in Drive
+  const files = DriveApp.getFilesByName(SPREADSHEET_NAME);
+  if (!files.hasNext()) {
+    throw new Error(`Spreadsheet not found by name: ${SPREADSHEET_NAME}`);
   }
+  const file = files.next();
+  return SpreadsheetApp.openById(file.getId());
+}
 
-  async function fetchSummary() {
-    setStatus("loading");
-    els.lastUpdatedText.textContent = "Loading…";
+function findResponseSheet_() {
+  const ss = getSpreadsheet_();
+  const sheets = ss.getSheets();
 
-    const res = await fetch(API_SUMMARY(), { method: "GET" });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    return data;
-  }
+  // Find sheet whose header row contains all REQUIRED_RESPONSE_HEADERS (robust match)
+  for (const sh of sheets) {
+    const lastCol = sh.getLastColumn();
+    const lastRow = sh.getLastRow();
+    if (lastRow < 1 || lastCol < 1) continue;
 
-  function normalizeRows(rows) {
-    return (rows || []).map(r => ({
-      client: (r.client ?? "").toString(),
-      account: (r.account ?? "").toString(),
-      committed: U.toInt(r.committed, 0),
-      used: U.toInt(r.used, 0),
-      remaining: U.toInt(r.remaining, 0),
-      status: (r.status ?? "").toString()
-    }));
-  }
-
-  function fillClientFilter(clients) {
-    // preserve selection if possible
-    const prev = els.clientSelect.value || "ALL";
-    els.clientSelect.innerHTML = `<option value="ALL">All clients</option>`;
-    for (const c of clients) {
-      const opt = document.createElement("option");
-      opt.value = c;
-      opt.textContent = c;
-      els.clientSelect.appendChild(opt);
-    }
-    els.clientSelect.value = clients.includes(prev) ? prev : "ALL";
-  }
-
-  function computeClients(rows) {
-    const set = new Set(rows.map(r => r.client).filter(Boolean));
-    return [...set].sort((a,b) => a.localeCompare(b));
-  }
-
-  function applyFilters() {
-    const q = state.search.trim().toLowerCase();
-    const status = state.status;
-    const client = state.client;
-
-    let rows = [...state.raw];
-
-    if (status !== "ALL") rows = rows.filter(r => r.status === status);
-    if (client !== "ALL") rows = rows.filter(r => r.client === client);
-
-    if (q) {
-      rows = rows.filter(r =>
-        r.client.toLowerCase().includes(q) ||
-        r.account.toLowerCase().includes(q) ||
-        r.status.toLowerCase().includes(q)
-      );
-    }
-
-    // Sorting
-    const sortKey = state.tableSortOverride || state.sort;
-    rows.sort(getSorter(sortKey));
-
-    state.filtered = rows;
-
-    // Paging clamp
-    const totalPages = Math.max(1, Math.ceil(rows.length / state.pageSize));
-    state.page = U.clamp(state.page, 1, totalPages);
-
-    renderTable();
-    renderMeta();
-    renderCharts();
-  }
-
-  function getSorter(key) {
-    switch (key) {
-      case "remainingAsc": return (a,b) => a.remaining - b.remaining || a.client.localeCompare(b.client);
-      case "remainingDesc": return (a,b) => b.remaining - a.remaining || a.client.localeCompare(b.client);
-      case "usedDesc": return (a,b) => b.used - a.used || a.client.localeCompare(b.client);
-      case "clientAsc": return (a,b) => a.client.localeCompare(b.client) || a.account.localeCompare(b.account);
-
-      // Table header click sorts:
-      case "client": return (a,b) => a.client.localeCompare(b.client) || a.account.localeCompare(b.account);
-      case "account": return (a,b) => a.account.localeCompare(b.account) || a.client.localeCompare(b.client);
-      case "committed": return (a,b) => b.committed - a.committed || a.client.localeCompare(b.client);
-      case "used": return (a,b) => b.used - a.used || a.client.localeCompare(b.client);
-      case "remaining": return (a,b) => a.remaining - b.remaining || a.client.localeCompare(b.client);
-      case "status": return (a,b) => a.status.localeCompare(b.status) || a.client.localeCompare(b.client);
-      default: return (a,b) => a.remaining - b.remaining;
+    const header = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(v => (v ?? "").toString());
+    if (containsAllNormalized_(header, REQUIRED_RESPONSE_HEADERS)) {
+      return sh;
     }
   }
 
-  function slicePage(rows) {
-    const start = (state.page - 1) * state.pageSize;
-    return rows.slice(start, start + state.pageSize);
+  // If not found, fallback to first sheet but validate (will throw if wrong)
+  const fallback = sheets[0];
+  assertHeaders_(fallback, REQUIRED_RESPONSE_HEADERS);
+  return fallback;
+}
+
+function getOrCreateCommitmentsSheet_() {
+  const ss = getSpreadsheet_();
+  let sh = ss.getSheetByName(SHEET_COMMIT);
+  if (!sh) sh = ss.insertSheet(SHEET_COMMIT);
+  ensureHeaders_(sh, COMMIT_HEADERS);
+  return sh;
+}
+
+/** -----------------------------
+ * Robust header utilities
+ * ----------------------------- */
+function getHeaderRow_(sheet) {
+  const lastCol = Math.max(sheet.getLastColumn(), 1);
+  return sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(v => (v ?? "").toString());
+}
+
+function normalizeHeader_(s) {
+  return (s ?? "")
+    .toString()
+    .trim()
+    .replace(/\s+/g, " ") // collapse multiple spaces
+    .toLowerCase();
+}
+
+function containsAllNormalized_(haveHeaders, requiredHeaders) {
+  const have = new Set((haveHeaders || []).map(normalizeHeader_));
+  return (requiredHeaders || []).every(r => have.has(normalizeHeader_(r)));
+}
+
+function assertHeaders_(sheet, requiredHeaders) {
+  const headerRow = getHeaderRow_(sheet);
+  const have = new Set(headerRow.map(normalizeHeader_));
+  const missing = requiredHeaders.filter(h => !have.has(normalizeHeader_(h)));
+  if (missing.length) {
+    throw new Error(`Responses sheet missing headers: ${missing.join(", ")}`);
+  }
+}
+
+function indexMap_(headerRow) {
+  const map = {};
+  (headerRow || []).forEach((h, i) => {
+    map[normalizeHeader_(h)] = i;
+  });
+  return map;
+}
+
+/**
+ * Only safe for Commitments sheet (not for responses sheet).
+ * Creates headers if empty, appends missing headers if partially present.
+ */
+function ensureHeaders_(sheet, headers) {
+  const lastCol = Math.max(sheet.getLastColumn(), headers.length);
+  const current = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(v => (v ?? "").toString());
+
+  // If sheet empty, write headers
+  const isEmpty = current.every(v => !v);
+  if (isEmpty) {
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    return;
   }
 
-  function badge(status) {
-    const cls =
-      status === "OVER LIMIT" ? "badge badge--danger" :
-      status === "NEAR LIMIT" ? "badge badge--warning" :
-      status === "OK" ? "badge badge--ok" :
-      "badge badge--neutral";
-    return `<span class="${cls}">${U.escapeHtml(status)}</span>`;
+  // Append missing headers
+  const currentNorm = new Set(current.map(normalizeHeader_));
+  const missing = headers.filter(h => !currentNorm.has(normalizeHeader_(h)));
+  if (missing.length) {
+    const start = current.length + 1;
+    sheet.getRange(1, start, 1, missing.length).setValues([missing]);
   }
+}
 
-  function renderTable() {
-    const rows = slicePage(state.filtered);
-    const html = rows.map(r => `
-      <tr>
-        <td>${U.escapeHtml(r.client)}</td>
-        <td>${U.escapeHtml(r.account)}</td>
-        <td class="num">${U.fmtNumber(r.committed)}</td>
-        <td class="num">${U.fmtNumber(r.used)}</td>
-        <td class="num ${r.remaining < 0 ? "neg" : ""}">${U.fmtNumber(r.remaining)}</td>
-        <td>${badge(r.status)}</td>
-      </tr>
-    `).join("");
+/** -----------------------------
+ * Auth + output + CORS helpers
+ * ----------------------------- */
+function getApiKey_() {
+  return PropertiesService.getScriptProperties().getProperty(API_KEY_PROP);
+}
 
-    els.tableBody.innerHTML = html || `<tr><td colspan="6" class="muted">No results</td></tr>`;
-  }
+function setApiKey() {
+  // Run once
+  PropertiesService.getScriptProperties().setProperty(
+    API_KEY_PROP,
+    "zK7pQ2vH9cR1xT6mB8nL0sF5dG3yJ7uA1eW9qC2hV6tN8x"
+  );
+}
 
-  function renderMeta() {
-    const total = state.filtered.length;
-    const totalPages = Math.max(1, Math.ceil(total / state.pageSize));
-    els.resultCount.textContent = `${total.toLocaleString()} result${total === 1 ? "" : "s"}`;
+function jsonOutput_(obj, code) {
+  // Apps Script doesn't reliably allow status codes; optionally include code in body
+  if (code) obj = Object.assign({ httpStatus: code }, obj);
+  return corsTextOutput_(JSON.stringify(obj), ContentService.MimeType.JSON);
+}
 
-    els.pageMeta.textContent = `Page ${state.page} of ${totalPages}`;
-    els.btnPrev.disabled = state.page <= 1;
-    els.btnNext.disabled = state.page >= totalPages;
-  }
+function corsTextOutput_(text, mime) {
+  const out = ContentService.createTextOutput(text);
+  out.setMimeType(mime || ContentService.MimeType.TEXT);
 
-  function renderKpis(counts) {
-    els.kpiOver.textContent = (counts?.over ?? 0).toLocaleString();
-    els.kpiNear.textContent = (counts?.near ?? 0).toLocaleString();
-    els.kpiOk.textContent = (counts?.ok ?? 0).toLocaleString();
-    els.kpiNoCommit.textContent = (counts?.noCommit ?? 0).toLocaleString();
-  }
+  // CORS headers for GitHub Pages/browser fetch
+  // If you get an error on setHeader, tell me the exact error and I’ll provide a fallback.
+  out.setHeader("Access-Control-Allow-Origin", "*");
+  out.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  out.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  function renderCharts() {
-    renderUrgentChart();
-    renderStatusChart();
-  }
+  return out;
+}
 
-  function renderUrgentChart() {
-    const topN = DEFAULT_URGENT_TOP_N || 12;
-    const urgent = [...state.filtered]
-      .filter(r => r.status !== "NO COMMIT SET")
-      .sort((a,b) => a.remaining - b.remaining)
-      .slice(0, topN);
-
-    const labels = urgent.map(r => `${r.client} / ${r.account}`);
-    const values = urgent.map(r => r.remaining);
-
-    const ctx = document.getElementById("chartUrgent");
-    if (state.charts.urgent) state.charts.urgent.destroy();
-
-    state.charts.urgent = new Chart(ctx, {
-      type: "bar",
-      data: {
-        labels,
-        datasets: [{ label: "Remaining minutes", data: values }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { display: false },
-          tooltip: { mode: "index", intersect: false }
-        },
-        scales: {
-          x: { ticks: { maxRotation: 50, minRotation: 0 } },
-          y: { beginAtZero: true }
-        }
-      }
-    });
-  }
-
-  function renderStatusChart() {
-    const counts = {
-      "OVER LIMIT": 0,
-      "NEAR LIMIT": 0,
-      "OK": 0,
-      "NO COMMIT SET": 0
-    };
-    for (const r of state.raw) {
-      if (counts[r.status] !== undefined) counts[r.status]++;
-    }
-
-    const labels = Object.keys(counts);
-    const values = labels.map(k => counts[k]);
-
-    const ctx = document.getElementById("chartStatus");
-    if (state.charts.status) state.charts.status.destroy();
-
-    state.charts.status = new Chart(ctx, {
-      type: "doughnut",
-      data: {
-        labels,
-        datasets: [{ label: "Accounts", data: values }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { position: "bottom" }
-        }
-      }
-    });
-  }
-
-  function wireEvents() {
-    els.btnRefresh.addEventListener("click", () => load());
-
-    els.btnExportCsv.addEventListener("click", () => {
-      const csv = U.toCsv(state.filtered);
-      const ts = new Date().toISOString().slice(0,19).replaceAll(":","-");
-      U.downloadText(`incheck-lite-dashboard-${ts}.csv`, csv);
-    });
-
-    els.btnResetFilters.addEventListener("click", () => {
-      state.search = "";
-      state.status = "ALL";
-      state.client = "ALL";
-      state.sort = "remainingAsc";
-      state.page = 1;
-      state.tableSortOverride = null;
-
-      els.searchInput.value = "";
-      els.statusSelect.value = "ALL";
-      els.clientSelect.value = "ALL";
-      els.sortSelect.value = "remainingAsc";
-      applyFilters();
-    });
-
-    els.searchInput.addEventListener("input", (e) => {
-      state.search = e.target.value || "";
-      state.page = 1;
-      applyFilters();
-    });
-
-    els.statusSelect.addEventListener("change", (e) => {
-      state.status = e.target.value;
-      state.page = 1;
-      applyFilters();
-    });
-
-    els.clientSelect.addEventListener("change", (e) => {
-      state.client = e.target.value;
-      state.page = 1;
-      applyFilters();
-    });
-
-    els.sortSelect.addEventListener("change", (e) => {
-      state.sort = e.target.value;
-      state.tableSortOverride = null;
-      state.page = 1;
-      applyFilters();
-    });
-
-    els.pageSizeSelect.addEventListener("change", (e) => {
-      state.pageSize = Number(e.target.value) || 25;
-      state.page = 1;
-      applyFilters();
-    });
-
-    els.btnPrev.addEventListener("click", () => {
-      state.page = Math.max(1, state.page - 1);
-      renderTable();
-      renderMeta();
-      renderCharts();
-    });
-
-    els.btnNext.addEventListener("click", () => {
-      const totalPages = Math.max(1, Math.ceil(state.filtered.length / state.pageSize));
-      state.page = Math.min(totalPages, state.page + 1);
-      renderTable();
-      renderMeta();
-      renderCharts();
-    });
-
-    // Click to sort columns
-    const ths = document.querySelectorAll("#accountsTable thead th");
-    ths.forEach(th => {
-      th.addEventListener("click", () => {
-        const key = th.getAttribute("data-sort");
-        if (!key) return;
-        state.tableSortOverride = key;
-        state.page = 1;
-        applyFilters();
-      });
-    });
-  }
-
-  async function load() {
-    try {
-      const data = await fetchSummary();
-
-      state.threshold = U.toInt(data.thresholdNearLimitMinutes, 120);
-      els.thresholdHint.textContent = `Near limit threshold: ${state.threshold} minutes (≤ threshold).`;
-
-      renderKpis(data.counts);
-
-      state.raw = normalizeRows(data.rows);
-      state.clients = computeClients(state.raw);
-      fillClientFilter(state.clients);
-
-      state.page = 1;
-      applyFilters();
-
-      setStatus("ok");
-      els.lastUpdatedText.textContent = `Updated: ${U.fmtDateTime(data.generatedAt)}`;
-    } catch (err) {
-      console.error(err);
-      setStatus("error");
-      els.lastUpdatedText.textContent = "Failed to load";
-      els.tableBody.innerHTML = `<tr><td colspan="6" class="muted">Could not load data. Check WEBAPP_EXEC_URL and deployment access.</td></tr>`;
-    }
-  }
-
-  function init() {
-    els.year.textContent = new Date().getFullYear();
-    els.buildInfo.textContent = "v1.0";
-    wireEvents();
-
-    // default page size
-    state.pageSize = Number(els.pageSizeSelect.value) || 25;
-
-    // quick config validation
-    if (!WEBAPP_EXEC_URL || WEBAPP_EXEC_URL.includes("PASTE_YOUR_WEBAPP_EXEC_URL_HERE")) {
-      setStatus("error");
-      els.lastUpdatedText.textContent = "Config missing";
-      els.tableBody.innerHTML = `<tr><td colspan="6" class="muted">Set WEBAPP_EXEC_URL in assets/js/config.js</td></tr>`;
-      return;
-    }
-
-    load();
-  }
-
-  init();
-})();
+function safeJson_(txt) {
+  try { return JSON.parse(txt); } catch (e) { return null; }
+}
