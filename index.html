@@ -1,4 +1,3 @@
-```html
 <!doctype html>
 <html lang="en">
 <head>
@@ -1222,40 +1221,53 @@
       focusClient: state.focusClient || null,
     };
 
-    const filteredSessions = sessionsRaw
-      .map(s => ({
-        date: normalizeStr(s.date),
-        client: normalizeStr(s.client),
-        account: normalizeStr(s.account),
-        csm: normalizeStr(s.csm),
-        durationMinutes: Number(s.durationMinutes ?? 0),
-        attendees: Number(s.attendees ?? 0),
-        mainContact: normalizeStr(s.mainContact),
-        briefUrl: normalizeStr(s.briefUrl),
-        notes: normalizeStr(s.notes),
-      }))
-      .filter(s => s.client)
-      .filter(s => {
-        // date range filter
-        if (filter.from && s.date && s.date < filter.from) return false;
-        if (filter.to && s.date && s.date > filter.to) return false;
+    // Normalize sessions once
+    const normalizedSessions = sessionsRaw.map(s => ({
+      date: normalizeStr(s.date),
+      client: normalizeStr(s.client),
+      account: normalizeStr(s.account),
+      csm: normalizeStr(s.csm),
+      durationMinutes: Number(s.durationMinutes ?? 0),
+      attendees: Number(s.attendees ?? 0),
+      mainContact: normalizeStr(s.mainContact),
+      briefUrl: normalizeStr(s.briefUrl),
+      notes: normalizeStr(s.notes),
+    }));
 
-        // focus client
-        if (filter.focusClient && s.client !== filter.focusClient) return false;
+    // Apply filters WITHOUT dropping "missing client" yet (for quality KPI)
+    const prelimSessions = normalizedSessions.filter(s => {
+      // date range filter
+      if (filter.from && s.date && s.date < filter.from) return false;
+      if (filter.to && s.date && s.date > filter.to) return false;
 
-        // client filter
-        if (filter.client !== "all" && s.client !== filter.client) return false;
+      // focus client
+      if (filter.focusClient && s.client !== filter.focusClient) return false;
 
-        // csm filter (by session csm)
-        if (filter.csm !== "all" && s.csm !== filter.csm) return false;
+      // client filter
+      if (filter.client !== "all" && s.client !== filter.client) return false;
 
-        // locations filter (by client meta)
+      // csm filter (by session csm)
+      if (filter.csm !== "all" && s.csm !== filter.csm) return false;
+
+      // locations filter (by client meta); if client missing, only allow when locationsMode is "all"
+      if (!s.client){
+        if (filter.locationsMode !== "all") return false;
+      } else {
         const m = meta.get(s.client);
         const locCount = m?.locations ?? 0;
         if (!filterByLocationsCount(locCount, filter.locationsMode)) return false;
+      }
 
-        return true;
-      });
+      return true;
+    });
+
+    // Data quality KPI (now missingClient can be >0)
+    const missingClient = prelimSessions.filter(s=>!s.client).length;
+    const missingBriefs = prelimSessions.filter(s=>s.client && !s.briefUrl).length;
+    const missingCsm = prelimSessions.filter(s=>s.client && !s.csm).length;
+
+    // For rest of the app, drop sessions with no client
+    const filteredSessions = prelimSessions.filter(s => s.client);
 
     // Aggregate sessions -> client usage
     const byClient = new Map();
@@ -1370,11 +1382,12 @@
       amountByCurrency.set(cur, (amountByCurrency.get(cur) || 0) + c.overageAmount);
     }
 
-    // Data quality KPI
-    const missingBriefs = sessions.filter(s=>!s.briefUrl).length;
-    const missingCsm = sessions.filter(s=>!s.csm).length;
-    const missingClient = sessions.filter(s=>!s.client).length;
-    const qualityScore = computeQualityScore({ sessionsCount: sessions.length, missingBriefs, missingCsm, missingClient });
+    const qualityScore = computeQualityScore({
+      sessionsCount: prelimSessions.length,
+      missingBriefs,
+      missingCsm,
+      missingClient
+    });
 
     // Forecast and burndown
     const forecast = buildForecast(filter.period, daily, totalCommitted);
@@ -1498,13 +1511,9 @@
     for (const c of sorted){
       if ((c.committedMinutes || 0) <= 0) continue;
       const util = c.utilization ?? 0;
-      const over = c.overageMinutes || 0;
       const remaining = c.remainingMinutes || 0;
       const last = c.lastSessionDate || "—";
 
-      // Determine projected utilization at month end (simple):
-      // Use global forecast endProjected proportionally by client's share of minutes (rough), OR compute per-client from sessions in drawer.
-      // We'll keep it simple: base on current utilization and global run rate heuristic.
       const projNote = (forecast?.runRatePerDay > 0 && forecast?.asOfIso)
         ? `Run-rate ~${fmt1(forecast.runRatePerDay)} min/day (view).`
         : `Run-rate unavailable.`;
@@ -1543,7 +1552,6 @@
     const se = startEndOfPeriod(filter.period);
     const endIso = se ? isoDate(se.end) : "";
     const startIso = se ? isoDate(se.start) : "";
-    const cutoffDays = 21;
 
     for (const c of clients){
       if ((c.committedMinutes || 0) <= 0) continue;
@@ -2062,10 +2070,11 @@
     els.drawerBackdrop.style.display = "none";
   }
 
+  // ✅ FIX: actually clears the dropdown when focus is cleared
   function syncClientFilterToFocus(){
     if (state.focusClient){
       els.clientFilter.value = state.focusClient;
-    } else if (els.clientFilter.value === state.focusClient) {
+    } else {
       els.clientFilter.value = "all";
     }
   }
@@ -2343,8 +2352,12 @@
     }
     els.csmFilter.value = csmList.includes(currentCsm) ? currentCsm : "all";
 
-    // Client options
-    const clientList = ["all", ...Array.from(new Set((state.rawSummary?.clients || []).map(x=>normalizeStr(x.client)).filter(Boolean))).sort((a,b)=>a.localeCompare(b))];
+    // ✅ FIX: Client options from view.clients (not only summary.clients)
+    const clientList = ["all", ...Array.from(new Set((view.clients || [])
+      .map(x=>normalizeStr(x.client))
+      .filter(Boolean)
+    )).sort((a,b)=>a.localeCompare(b))];
+
     const currentClient = els.clientFilter.value || "all";
     els.clientFilter.innerHTML = "";
     for (const c of clientList){
@@ -2353,6 +2366,7 @@
       opt.textContent = c === "all" ? "All" : c;
       els.clientFilter.appendChild(opt);
     }
+
     // Focus client should win
     if (state.focusClient && clientList.includes(state.focusClient)){
       els.clientFilter.value = state.focusClient;
@@ -2533,9 +2547,8 @@
   // View filter controls
   [els.from, els.to, els.csmFilter, els.clientFilter, els.locationsFilter, els.atRiskToggle, els.overageOnlyToggle, els.compareToggle].forEach(el=>{
     el.addEventListener("change", ()=>{
-      // Changing filters should rerender; period / date range requires refresh (server-side date range filter).
-      // We'll rerender for most changes, but if from/to changed, we refresh to let server filter sessions too.
-      if (el === els.from || el === els.to || el === els.period || el === els.compareToggle){
+      // Changing filters should rerender; date range requires refresh (server-side date range filter).
+      if (el === els.from || el === els.to || el === els.compareToggle){
         refreshAll();
       } else {
         // focusClient should align with client filter when changed
@@ -2612,4 +2625,3 @@
 
 </body>
 </html>
-```
