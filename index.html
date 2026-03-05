@@ -3,216 +3,368 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>CSM Sessions Dashboard</title>
+  <title>CSM Dashboard</title>
+
+  <!-- Charts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Tabulator (Pro tables) -->
+  <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@6.2.0/dist/css/tabulator_midnight.min.css">
+  <script src="https://unpkg.com/tabulator-tables@6.2.0/dist/js/tabulator.min.js"></script>
+
   <style>
     :root{
-      --bg:#0b1020; --panel:#111936; --text:#e8eeff; --muted:#aab4d6;
-      --border:rgba(255,255,255,.08); --shadow: 0 10px 30px rgba(0,0,0,.35);
-      --accent:#6aa6ff; --good:#55e0a3; --warn:#ffcc66; --bad:#ff6b6b;
+      --bg:#070b18;
+      --panel:#0f1732;
+      --panel2:#0c1228;
+      --card:rgba(255,255,255,.04);
+      --border:rgba(255,255,255,.09);
+      --text:#eaf0ff;
+      --muted:#aab4d6;
+      --accent:#6aa6ff;
+      --good:#55e0a3;
+      --warn:#ffcc66;
+      --bad:#ff6b6b;
+      --shadow: 0 18px 45px rgba(0,0,0,.45);
+      --radius: 18px;
     }
     *{ box-sizing:border-box; }
     body{
-      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      background: radial-gradient(1200px 600px at 10% 0%, rgba(106,166,255,.18), transparent 60%),
-                  radial-gradient(900px 500px at 90% 10%, rgba(85,224,163,.14), transparent 60%),
-                  var(--bg);
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
       color:var(--text);
+      background:
+        radial-gradient(1100px 680px at 12% -10%, rgba(106,166,255,.20), transparent 60%),
+        radial-gradient(900px 520px at 98% 10%, rgba(85,224,163,.13), transparent 55%),
+        radial-gradient(850px 520px at 75% 110%, rgba(255,204,102,.10), transparent 55%),
+        var(--bg);
     }
-    header{
-      padding:18px 18px 12px;
-      border-bottom:1px solid var(--border);
-      position:sticky; top:0; backdrop-filter: blur(10px);
-      background: rgba(11,16,32,.72);
-      z-index:10;
+
+    .app{
+      display:grid;
+      grid-template-columns: 280px 1fr;
+      min-height:100vh;
     }
-    h1{ margin:0; font-size:18px; }
-    .sub{ color:var(--muted); font-size:12px; margin-top:6px; }
-    .wrap{ max-width:1200px; margin:0 auto; padding:16px; }
-    .controls{ display:flex; gap:10px; flex-wrap:wrap; align-items:end; margin:12px 0 16px; }
-    label{ font-size:12px; color:var(--muted); display:block; margin-bottom:6px; }
-    input, select, button{
-      background: var(--panel);
+
+    /* Sidebar */
+    .sidebar{
+      position:sticky; top:0;
+      height:100vh;
+      padding:18px;
+      border-right:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      backdrop-filter: blur(10px);
+    }
+    .brand{
+      display:flex; gap:10px; align-items:center;
+      padding:12px 12px;
       border:1px solid var(--border);
-      color: var(--text);
-      border-radius: 10px;
-      padding:10px 12px;
-      outline:none;
-    }
-    input::placeholder{ color: rgba(170,180,214,.7); }
-    button{
-      cursor:pointer;
-      background: linear-gradient(180deg, rgba(106,166,255,.25), rgba(106,166,255,.10));
-      border:1px solid rgba(106,166,255,.35);
-    }
-    button:hover{ filter:brightness(1.08); }
-    .grid{ display:grid; grid-template-columns: repeat(12, 1fr); gap:12px; }
-    .card{
-      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-      border:1px solid var(--border);
-      border-radius: 16px;
-      padding:14px;
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.03);
       box-shadow: var(--shadow);
     }
-    .kpi{ grid-column: span 3; }
-    .kpi .t{ color:var(--muted); font-size:12px; }
-    .kpi .v{ font-size:22px; margin-top:8px; font-weight:700; }
-    .kpi .s{ color:var(--muted); font-size:12px; margin-top:6px; }
-    .span6{ grid-column: span 6; }
-    .span12{ grid-column: span 12; }
-    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-    .pill{
-      display:inline-flex; gap:6px; align-items:center;
-      padding:6px 10px; border:1px solid var(--border);
-      border-radius: 999px; color: var(--muted); font-size:12px;
+    .logo{
+      width:36px; height:36px; border-radius:12px;
+      background: radial-gradient(circle at 30% 30%, rgba(106,166,255,.9), rgba(106,166,255,.2));
+      border:1px solid rgba(106,166,255,.35);
     }
-    .dot{ width:8px; height:8px; border-radius:50%; background:var(--accent); }
+    .brand h1{ font-size:14px; margin:0; }
+    .brand .sub{ font-size:12px; color:var(--muted); margin-top:2px; }
+
+    .nav{
+      margin-top:14px;
+      display:flex; flex-direction:column; gap:8px;
+    }
+    .nav a{
+      text-decoration:none; color:var(--text);
+      padding:10px 12px;
+      border:1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(255,255,255,.02);
+    }
+    .nav a:hover{ border-color: rgba(106,166,255,.35); }
+    .nav a.active{
+      background: linear-gradient(180deg, rgba(106,166,255,.22), rgba(106,166,255,.08));
+      border-color: rgba(106,166,255,.40);
+    }
+
+    .sidecard{
+      margin-top:14px;
+      padding:12px;
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.02);
+    }
+    .sidecard .t{ font-size:12px; color:var(--muted); }
+    .sidecard .v{ font-weight:800; font-size:20px; margin-top:6px; }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:8px 10px;
+      border-radius: 999px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.02);
+      color: var(--muted);
+      font-size:12px;
+      margin-top:10px;
+    }
+    .dot{ width:9px; height:9px; border-radius:50%; background:var(--accent); }
     .dot.good{ background:var(--good); }
     .dot.warn{ background:var(--warn); }
     .dot.bad{ background:var(--bad); }
-    table{ width:100%; border-collapse: collapse; font-size:13px; }
-    th, td{ border-bottom: 1px solid var(--border); padding:10px 8px; vertical-align: top; }
-    th{ color:var(--muted); font-weight:600; text-align:left; }
-    a{ color: var(--accent); text-decoration:none; }
-    a:hover{ text-decoration: underline; }
-    .small{ font-size:12px; color:var(--muted); }
-    .right{ text-align:right; }
-    .muted{ color:var(--muted); }
-    .nowrap{ white-space:nowrap; }
-    .status{
-      padding:6px 10px; border-radius: 10px; border:1px solid var(--border);
-      background: rgba(255,255,255,.03);
-      color: var(--muted); font-size:12px;
+
+    /* Main */
+    .main{
+      padding:20px 20px 30px;
     }
-    .err{ border-color: rgba(255,107,107,.35); color: rgba(255,107,107,.95); }
-    @media (max-width: 980px){
+    .topbar{
+      position:sticky; top:0;
+      z-index:5;
+      padding:14px 14px;
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(7,11,24,.70);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow);
+    }
+    .toprow{
+      display:flex; gap:10px; flex-wrap:wrap; align-items:end; justify-content:space-between;
+    }
+    .controls{
+      display:flex; gap:10px; flex-wrap:wrap; align-items:end;
+    }
+    label{ display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
+    select, input, button{
+      background: rgba(255,255,255,.03);
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius: 14px;
+      padding:10px 12px;
+      outline:none;
+      min-height:40px;
+    }
+    button{
+      cursor:pointer;
+      background: linear-gradient(180deg, rgba(106,166,255,.25), rgba(106,166,255,.08));
+      border-color: rgba(106,166,255,.35);
+      font-weight:700;
+    }
+    button.secondary{
+      background: rgba(255,255,255,.03);
+      border-color: var(--border);
+      font-weight:600;
+    }
+    button:hover{ filter:brightness(1.07); }
+    .status{
+      font-size:12px;
+      color:var(--muted);
+      padding:9px 12px;
+      border:1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(255,255,255,.02);
+      display:flex; align-items:center; gap:8px;
+    }
+    .status.err{
+      border-color: rgba(255,107,107,.35);
+      color: rgba(255,107,107,.95);
+    }
+
+    .grid{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap:12px;
+    }
+    .card{
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      box-shadow: var(--shadow);
+      padding:14px;
+    }
+    .kpi{ grid-column: span 3; }
+    .kpi .t{ color:var(--muted); font-size:12px; }
+    .kpi .v{ font-weight:900; font-size:24px; margin-top:8px; }
+    .kpi .s{ color:var(--muted); font-size:12px; margin-top:6px; }
+
+    .span6{ grid-column: span 6; }
+    .span12{ grid-column: span 12; }
+
+    .titleRow{
+      display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .titleRow .title{ font-weight:900; letter-spacing:.2px; }
+    .titleRow .subtitle{ font-size:12px; color:var(--muted); margin-top:3px; }
+
+    .search{
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+    }
+    .search input{ min-width:260px; }
+
+    .tableWrap{
+      border:1px solid var(--border);
+      border-radius: 16px;
+      overflow:hidden;
+      background: rgba(255,255,255,.02);
+    }
+
+    .hint{
+      font-size:12px;
+      color: var(--muted);
+      margin-top:10px;
+      line-height:1.35;
+    }
+
+    .tabulator{
+      background: transparent !important;
+      border: none !important;
+    }
+
+    @media (max-width: 1060px){
+      .app{ grid-template-columns: 1fr; }
+      .sidebar{ position:relative; height:auto; border-right:none; border-bottom:1px solid var(--border); }
       .kpi{ grid-column: span 6; }
       .span6{ grid-column: span 12; }
     }
   </style>
 </head>
+
 <body>
-<header>
-  <div class="wrap">
-    <h1>CSM Sessions Dashboard</h1>
-    <div class="sub">Auto-connected to Apps Script API (no manual URL input)</div>
-
-    <div class="controls">
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo"></div>
       <div>
-        <label>Period (YYYY-MM)</label>
-        <select id="period"></select>
+        <h1>CSM Dashboard</h1>
+        <div class="sub">Sessions • Commitments • Overage</div>
       </div>
-      <div>
-        <label>Sessions date from</label>
-        <input id="from" type="date"/>
-      </div>
-      <div>
-        <label>to</label>
-        <input id="to" type="date"/>
-      </div>
-      <div class="row">
-        <button id="refreshBtn">Refresh</button>
-      </div>
-      <div id="status" class="status">Ready</div>
     </div>
-  </div>
-</header>
 
-<div class="wrap">
-  <div class="grid">
-    <div class="card kpi"><div class="t">Total Sessions</div><div class="v" id="k_totalSessions">—</div><div class="s"></div></div>
-    <div class="card kpi"><div class="t">Total Minutes</div><div class="v" id="k_totalMinutes">—</div><div class="s"></div></div>
-    <div class="card kpi"><div class="t">Avg Duration</div><div class="v" id="k_avg">—</div><div class="s">minutes per session</div></div>
-    <div class="card kpi"><div class="t">Unique Clients</div><div class="v" id="k_clients">—</div><div class="s"></div></div>
+    <nav class="nav">
+      <a href="#overview" class="active" id="navOverview">Overview</a>
+      <a href="#clients" id="navClients">Clients</a>
+      <a href="#sessions" id="navSessions">Sessions</a>
+    </nav>
 
-    <div class="card kpi"><div class="t">Committed Minutes</div><div class="v" id="k_committed">—</div><div class="s">from Tab 2</div></div>
-    <div class="card kpi"><div class="t">Overage Minutes</div><div class="v" id="k_over">—</div><div class="s">consumed - committed</div></div>
-    <div class="card kpi"><div class="t">Overage Amount</div><div class="v" id="k_over_amt">—</div><div class="s small">Needs “Overage rate per hour” column if you want money</div></div>
-    <div class="card kpi">
+    <div class="sidecard">
       <div class="t">Legend</div>
-      <div class="row" style="margin-top:10px;">
-        <span class="pill"><span class="dot good"></span>&lt; 80%</span>
-        <span class="pill"><span class="dot warn"></span>80–99%</span>
-        <span class="pill"><span class="dot bad"></span>&ge; 100%</span>
+      <div class="pill"><span class="dot good"></span>&lt; 80% Util</div>
+      <div class="pill"><span class="dot warn"></span>80–99% Util</div>
+      <div class="pill"><span class="dot bad"></span>&ge; 100% Util</div>
+      <div class="hint">
+        If your page shows “JSON timeout”, open this in a browser:<br/>
+        <span style="color:var(--accent);">…/exec?action=periods&callback=TEST</span><br/>
+        It must start with <b>TEST(</b>.
       </div>
-      <div class="s small" style="margin-top:10px;">Utilization = consumed / committed</div>
     </div>
+  </aside>
 
-    <div class="card span6">
-      <div style="font-weight:700;">Minutes per day</div>
-      <div class="small">Based on sessions in this period</div>
-      <canvas id="chartDaily" height="120"></canvas>
-    </div>
-
-    <div class="card span6">
-      <div style="font-weight:700;">Top clients by minutes</div>
-      <div class="small">Top 10</div>
-      <canvas id="chartTopClients" height="120"></canvas>
-    </div>
-
-    <div class="card span12">
-      <div class="row" style="justify-content:space-between;">
-        <div>
-          <div style="font-weight:700;">Clients (searchable)</div>
-          <div class="small">Commitment vs consumed vs overage</div>
+  <main class="main">
+    <div class="topbar">
+      <div class="toprow">
+        <div class="controls">
+          <div>
+            <label>Period (YYYY-MM)</label>
+            <select id="period"></select>
+          </div>
+          <div>
+            <label>Date from</label>
+            <input id="from" type="date"/>
+          </div>
+          <div>
+            <label>to</label>
+            <input id="to" type="date"/>
+          </div>
+          <div style="display:flex; gap:10px; align-items:end;">
+            <button id="refreshBtn">Refresh</button>
+            <button class="secondary" id="exportClientsBtn">Export Clients CSV</button>
+            <button class="secondary" id="exportSessionsBtn">Export Sessions CSV</button>
+          </div>
         </div>
-        <input id="clientSearch" placeholder="Search client / CSM..." />
-      </div>
-      <div style="overflow:auto; margin-top:10px;">
-        <table>
-          <thead>
-            <tr>
-              <th>Client</th>
-              <th class="right">Locations</th>
-              <th class="right">Committed</th>
-              <th class="right">Consumed</th>
-              <th class="right">Util%</th>
-              <th class="right">Overage</th>
-              <th class="right">Sessions</th>
-              <th class="nowrap">Last session</th>
-              <th>Primary CSM</th>
-            </tr>
-          </thead>
-          <tbody id="clientsBody"></tbody>
-        </table>
+
+        <div class="status" id="status"><span class="dot" style="background:var(--accent)"></span><span>Ready</span></div>
       </div>
     </div>
 
-    <div class="card span12">
-      <div class="row" style="justify-content:space-between;">
-        <div>
-          <div style="font-weight:700;">Sessions (searchable)</div>
-          <div class="small">Filtered by period + optional date range</div>
+    <!-- OVERVIEW -->
+    <section id="overview" class="grid">
+      <div class="card kpi"><div class="t">Total Sessions</div><div class="v" id="k_totalSessions">—</div><div class="s">in period</div></div>
+      <div class="card kpi"><div class="t">Total Minutes</div><div class="v" id="k_totalMinutes">—</div><div class="s">in period</div></div>
+      <div class="card kpi"><div class="t">Avg Duration</div><div class="v" id="k_avg">—</div><div class="s">minutes/session</div></div>
+      <div class="card kpi"><div class="t">Unique Clients</div><div class="v" id="k_clients">—</div><div class="s">active clients</div></div>
+
+      <div class="card kpi"><div class="t">Committed Minutes</div><div class="v" id="k_committed">—</div><div class="s">from Tab 2</div></div>
+      <div class="card kpi"><div class="t">Overage Minutes</div><div class="v" id="k_over">—</div><div class="s">consumed - committed</div></div>
+      <div class="card kpi"><div class="t">Overage Amount</div><div class="v" id="k_over_amt">—</div><div class="s">requires rate/hour column</div></div>
+      <div class="card kpi"><div class="t">API</div><div class="v" id="k_api">Connected</div><div class="s" id="k_api_s">Apps Script JSONP</div></div>
+
+      <div class="card span6">
+        <div class="titleRow">
+          <div>
+            <div class="title">Minutes per day</div>
+            <div class="subtitle">Sessions in selected period</div>
+          </div>
         </div>
-        <input id="sessionSearch" placeholder="Search client / account / CSM / contact..." />
+        <canvas id="chartDaily" height="120"></canvas>
       </div>
-      <div style="overflow:auto; margin-top:10px;">
-        <table>
-          <thead>
-            <tr>
-              <th class="nowrap">Date</th>
-              <th>Client</th>
-              <th>Account</th>
-              <th>CSM</th>
-              <th class="right">Minutes</th>
-              <th class="right">Attendees</th>
-              <th>Main Contact</th>
-              <th>Brief (PDF)</th>
-              <th>Notes</th>
-            </tr>
-          </thead>
-          <tbody id="sessionsBody"></tbody>
-        </table>
+
+      <div class="card span6">
+        <div class="titleRow">
+          <div>
+            <div class="title">Top clients by minutes</div>
+            <div class="subtitle">Top 10</div>
+          </div>
+        </div>
+        <canvas id="chartTopClients" height="120"></canvas>
       </div>
-    </div>
-  </div>
+    </section>
+
+    <!-- CLIENTS -->
+    <section id="clients" class="grid" style="margin-top:12px;">
+      <div class="card span12">
+        <div class="titleRow">
+          <div>
+            <div class="title">Clients</div>
+            <div class="subtitle">Search, sort, paginate. Utilization/overage computed from Sessions + Tab 2 commitments.</div>
+          </div>
+          <div class="search">
+            <input id="clientSearch" placeholder="Search clients..." />
+            <button class="secondary" id="clearClientSearch">Clear</button>
+          </div>
+        </div>
+        <div class="tableWrap">
+          <div id="clientsTable"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SESSIONS -->
+    <section id="sessions" class="grid" style="margin-top:12px;">
+      <div class="card span12">
+        <div class="titleRow">
+          <div>
+            <div class="title">Sessions</div>
+            <div class="subtitle">Filtered by period + optional date range. Click “Open” to view PDF brief.</div>
+          </div>
+          <div class="search">
+            <input id="sessionSearch" placeholder="Search sessions..." />
+            <button class="secondary" id="clearSessionSearch">Clear</button>
+          </div>
+        </div>
+        <div class="tableWrap">
+          <div id="sessionsTable"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
 </div>
 
 <script>
   /*********************************************************
-   * ✅ PUT YOUR DEPLOYMENT LINK HERE ONCE (the /exec URL)
+   * ✅ YOUR APPS SCRIPT /exec URL (hardcoded)
    *********************************************************/
-  const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbzeiw45H5PVs8_91N8x-u-COmmhzotE41vGgy40-NtEO6vKEMwNgott4VQ0SRy5WZf_/exec";
+  const API_URL = "https://script.google.com/macros/s/AKfycbzeiw45H5PVs8_91N8x-u-COmmhzotE41vGgy40-NtEO6vKEMwNgott4VQ0SRy5WZf_/exec";
 
   const els = {
     period: document.getElementById('period'),
@@ -228,18 +380,25 @@
     k_committed: document.getElementById('k_committed'),
     k_over: document.getElementById('k_over'),
     k_over_amt: document.getElementById('k_over_amt'),
+    k_api: document.getElementById('k_api'),
+    k_api_s: document.getElementById('k_api_s'),
 
-    clientsBody: document.getElementById('clientsBody'),
-    sessionsBody: document.getElementById('sessionsBody'),
     clientSearch: document.getElementById('clientSearch'),
     sessionSearch: document.getElementById('sessionSearch'),
+    clearClientSearch: document.getElementById('clearClientSearch'),
+    clearSessionSearch: document.getElementById('clearSessionSearch'),
+
+    exportClientsBtn: document.getElementById('exportClientsBtn'),
+    exportSessionsBtn: document.getElementById('exportSessionsBtn'),
   };
 
-  let state = { summary:null, sessions:[], clients:[], charts:{ daily:null, topClients:null } };
+  let charts = { daily:null, topClients:null };
+  let tables = { clients:null, sessions:null };
+  let state = { summary:null, sessions:[], clients:[] };
 
   function setStatus(msg, isError=false){
-    els.status.textContent = msg;
     els.status.className = 'status' + (isError ? ' err' : '');
+    els.status.innerHTML = `<span class="dot" style="background:${isError ? 'var(--bad)' : 'var(--accent)'}"></span><span>${escapeHtml(msg)}</span>`;
   }
 
   function jsonp(url){
@@ -247,41 +406,38 @@
       const cb = 'cb_' + Math.random().toString(36).slice(2);
       const s = document.createElement('script');
       const sep = url.includes('?') ? '&' : '?';
-      s.src = url + sep + 'callback=' + cb;
+      const bust = `__ts=${Date.now()}`;
+      s.src = url + sep + bust + '&callback=' + cb;
       s.async = true;
 
-      const timer = setTimeout(() => { cleanup(); reject(new Error('JSONP timeout')); }, 20000);
+      const t = setTimeout(() => { cleanup(); reject(new Error('JSON timeout (callback not executed).')); }, 20000);
 
       window[cb] = (data) => { cleanup(); resolve(data); };
 
       function cleanup(){
-        clearTimeout(timer);
-        delete window[cb];
+        clearTimeout(t);
+        try { delete window[cb]; } catch(e){}
         s.remove();
       }
+      s.onerror = () => { cleanup(); reject(new Error('JSONP load error (script blocked or endpoint not public).')); };
 
-      s.onerror = () => { cleanup(); reject(new Error('JSONP load error')); };
       document.head.appendChild(s);
     });
   }
 
-  const fmtInt = (n)=> (n ?? 0).toLocaleString();
-  const fmt1 = (n)=> (n ?? 0).toLocaleString(undefined,{maximumFractionDigits:1});
-  const fmt2 = (n)=> (n ?? 0).toLocaleString(undefined,{maximumFractionDigits:2});
-  const fmtPct = (x)=> (x==null ? '—' : (x*100).toFixed(1)+'%');
-
-  function utilDotClass(util){
-    if (util == null) return '';
-    if (util >= 1.0) return 'bad';
-    if (util >= 0.8) return 'warn';
-    return 'good';
-  }
-
-  function esc(s){
+  function escapeHtml(s){
     return String(s ?? '')
-      .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
-      .replaceAll('"','&quot;').replaceAll("'","&#039;");
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'","&#039;");
   }
+
+  const fmtInt = (n)=> (n ?? 0).toLocaleString();
+  const fmt1   = (n)=> (n ?? 0).toLocaleString(undefined,{maximumFractionDigits:1});
+  const fmt2   = (n)=> (n ?? 0).toLocaleString(undefined,{maximumFractionDigits:2});
+  const fmtPct = (x)=> (x==null ? '—' : (x*100).toFixed(1)+'%');
 
   function todayPeriod(){
     const d = new Date();
@@ -289,21 +445,16 @@
   }
 
   async function loadPeriods(){
-    if (!DEFAULT_API_URL || DEFAULT_API_URL.includes("PASTE_")) {
-      throw new Error("Put your Apps Script /exec URL in DEFAULT_API_URL at the top of this file.");
-    }
-    const res = await jsonp(DEFAULT_API_URL + '?action=periods');
+    const res = await jsonp(API_URL + '?action=periods');
     if (!res.ok) throw new Error(res.error || 'Failed to load periods');
-
+    const periods = res.periods || [];
     els.period.innerHTML = '';
-    (res.periods || []).forEach(p => {
+    periods.forEach(p => {
       const opt = document.createElement('option');
-      opt.value = p;
-      opt.textContent = p;
+      opt.value = p; opt.textContent = p;
       els.period.appendChild(opt);
     });
-
-    els.period.value = (res.periods && res.periods[0]) ? res.periods[0] : todayPeriod();
+    els.period.value = periods[0] || todayPeriod();
   }
 
   async function refreshAll(){
@@ -311,96 +462,40 @@
     const from = els.from.value;
     const to = els.to.value;
 
-    setStatus('Loading...');
+    setStatus('Loading…');
 
-    const summaryP = jsonp(DEFAULT_API_URL + `?action=summary&period=${encodeURIComponent(period)}`);
-    const sessionsUrl = DEFAULT_API_URL + `?action=sessions&period=${encodeURIComponent(period)}`
+    const summaryP = jsonp(API_URL + `?action=summary&period=${encodeURIComponent(period)}`);
+    const sessionsUrl = API_URL + `?action=sessions&period=${encodeURIComponent(period)}`
       + (from ? `&from=${encodeURIComponent(from)}` : '')
       + (to ? `&to=${encodeURIComponent(to)}` : '');
     const sessionsP = jsonp(sessionsUrl);
 
     const [summary, sessionsRes] = await Promise.all([summaryP, sessionsP]);
-
     if (!summary.ok) throw new Error(summary.error || 'Summary error');
     if (!sessionsRes.ok) throw new Error(sessionsRes.error || 'Sessions error');
 
     state.summary = summary;
     state.clients = summary.clients || [];
     state.sessions = sessionsRes.sessions || [];
+    renderAll();
 
-    render();
+    els.k_api.textContent = "Connected";
+    els.k_api_s.textContent = "Apps Script JSONP OK";
     setStatus('Loaded');
   }
 
-  function render(){
+  function renderAll(){
     const t = state.summary?.totals || {};
     els.k_totalSessions.textContent = fmtInt(t.totalSessions);
-    els.k_totalMinutes.textContent = fmtInt(t.totalMinutes);
-    els.k_avg.textContent = fmt1(t.avgDurationMinutes);
-    els.k_clients.textContent = fmtInt(t.uniqueClients);
-    els.k_committed.textContent = fmtInt(t.totalCommittedMinutes);
-    els.k_over.textContent = fmtInt(t.totalOverageMinutes);
-    els.k_over_amt.textContent = fmt2(t.totalOverageAmount);
+    els.k_totalMinutes.textContent  = fmtInt(t.totalMinutes);
+    els.k_avg.textContent           = fmt1(t.avgDurationMinutes);
+    els.k_clients.textContent       = fmtInt(t.uniqueClients);
+    els.k_committed.textContent     = fmtInt(t.totalCommittedMinutes);
+    els.k_over.textContent          = fmtInt(t.totalOverageMinutes);
+    els.k_over_amt.textContent      = fmt2(t.totalOverageAmount);
 
-    renderClientsTable();
-    renderSessionsTable();
     renderCharts();
-  }
-
-  function renderClientsTable(){
-    const q = els.clientSearch.value.trim().toLowerCase();
-    const rows = (state.clients || []).filter(c => !q ||
-      (c.client||'').toLowerCase().includes(q) || (c.primaryCsm||'').toLowerCase().includes(q)
-    );
-
-    els.clientsBody.innerHTML = rows.map(c => {
-      const dot = utilDotClass(c.utilization);
-      return `
-        <tr>
-          <td>
-            <div class="row" style="gap:8px;">
-              <span class="dot ${dot}"></span>
-              <div>
-                <div style="font-weight:700;">${esc(c.client)}</div>
-                <div class="small muted">Overage amount: ${fmt2(c.overageAmount)} ${esc(c.currency||'')}</div>
-              </div>
-            </div>
-          </td>
-          <td class="right">${fmtInt(c.locations)}</td>
-          <td class="right">${fmtInt(c.committedMinutes)}</td>
-          <td class="right">${fmtInt(c.consumedMinutes)}</td>
-          <td class="right">${fmtPct(c.utilization)}</td>
-          <td class="right">${fmtInt(c.overageMinutes)}</td>
-          <td class="right">${fmtInt(c.sessionsCount)}</td>
-          <td class="nowrap">${esc(c.lastSessionDate || '')}</td>
-          <td>${esc(c.primaryCsm || '')}</td>
-        </tr>
-      `;
-    }).join('') || `<tr><td colspan="9" class="muted">No clients found</td></tr>`;
-  }
-
-  function renderSessionsTable(){
-    const q = els.sessionSearch.value.trim().toLowerCase();
-    const rows = (state.sessions || []).filter(s => !q || ([
-      s.client, s.account, s.csm, s.mainContact, s.notes
-    ].join(' ').toLowerCase().includes(q)));
-
-    els.sessionsBody.innerHTML = rows.map(s => {
-      const link = s.briefUrl ? `<a href="${esc(s.briefUrl)}" target="_blank" rel="noopener">Open</a>` : '';
-      return `
-        <tr>
-          <td class="nowrap">${esc(s.date || '')}</td>
-          <td>${esc(s.client || '')}</td>
-          <td>${esc(s.account || '')}</td>
-          <td>${esc(s.csm || '')}</td>
-          <td class="right">${fmtInt(s.durationMinutes)}</td>
-          <td class="right">${fmtInt(s.attendees)}</td>
-          <td>${esc(s.mainContact || '')}</td>
-          <td>${link}</td>
-          <td>${esc(s.notes || '')}</td>
-        </tr>
-      `;
-    }).join('') || `<tr><td colspan="9" class="muted">No sessions found</td></tr>`;
+    renderTables();
   }
 
   function renderCharts(){
@@ -410,44 +505,236 @@
     const dLabels = daily.map(x => x.date);
     const dData = daily.map(x => x.minutes);
 
-    if (state.charts.daily) state.charts.daily.destroy();
-    state.charts.daily = new Chart(document.getElementById('chartDaily'), {
+    if (charts.daily) charts.daily.destroy();
+    charts.daily = new Chart(document.getElementById('chartDaily'), {
       type: 'line',
       data: { labels: dLabels, datasets: [{ label: 'Minutes', data: dData, tension: 0.25 }] },
-      options: { responsive:true, plugins:{ legend:{ display:false } } }
+      options: {
+        responsive:true,
+        plugins:{ legend:{ display:false } },
+        scales:{
+          x:{ ticks:{ color:'rgba(170,180,214,.85)' }, grid:{ color:'rgba(255,255,255,.06)' } },
+          y:{ ticks:{ color:'rgba(170,180,214,.85)' }, grid:{ color:'rgba(255,255,255,.06)' } },
+        }
+      }
     });
 
     const cLabels = top.map(x => x.client);
     const cData = top.map(x => x.consumedMinutes);
 
-    if (state.charts.topClients) state.charts.topClients.destroy();
-    state.charts.topClients = new Chart(document.getElementById('chartTopClients'), {
+    if (charts.topClients) charts.topClients.destroy();
+    charts.topClients = new Chart(document.getElementById('chartTopClients'), {
       type: 'bar',
       data: { labels: cLabels, datasets: [{ label: 'Minutes', data: cData }] },
-      options: { responsive:true, plugins:{ legend:{ display:false } } }
+      options: {
+        responsive:true,
+        plugins:{ legend:{ display:false } },
+        scales:{
+          x:{ ticks:{ color:'rgba(170,180,214,.85)' }, grid:{ color:'rgba(255,255,255,.06)' } },
+          y:{ ticks:{ color:'rgba(170,180,214,.85)' }, grid:{ color:'rgba(255,255,255,.06)' } },
+        }
+      }
     });
   }
 
-  els.refreshBtn.addEventListener('click', async () => {
-    try { await refreshAll(); }
-    catch (e){ setStatus(e.message || String(e), true); }
-  });
-  els.period.addEventListener('change', async () => {
-    try { await refreshAll(); }
-    catch (e){ setStatus(e.message || String(e), true); }
-  });
-  els.clientSearch.addEventListener('input', renderClientsTable);
-  els.sessionSearch.addEventListener('input', renderSessionsTable);
+  function renderTables(){
+    // Clients table
+    const clientsData = state.clients.map(c => ({
+      client: c.client,
+      locations: c.locations,
+      committed: c.committedMinutes,
+      consumed: c.consumedMinutes,
+      util: c.utilization,
+      overage: c.overageMinutes,
+      sessions: c.sessionsCount,
+      last: c.lastSessionDate,
+      csm: c.primaryCsm,
+      overageAmount: c.overageAmount,
+      currency: c.currency
+    }));
 
+    if (tables.clients) tables.clients.replaceData(clientsData);
+    else {
+      tables.clients = new Tabulator("#clientsTable", {
+        data: clientsData,
+        layout: "fitColumns",
+        height: "520px",
+        pagination: true,
+        paginationSize: 12,
+        movableColumns: true,
+        resizableColumns: true,
+        columns: [
+          {title:"Client", field:"client", minWidth:220, headerFilter:true},
+          {title:"Locations", field:"locations", hozAlign:"right", sorter:"number"},
+          {title:"Committed", field:"committed", hozAlign:"right", sorter:"number"},
+          {title:"Consumed", field:"consumed", hozAlign:"right", sorter:"number"},
+          {
+            title:"Util%",
+            field:"util",
+            hozAlign:"right",
+            sorter:"number",
+            formatter:(cell)=>{
+              const v = cell.getValue();
+              if (v === null || v === undefined) return "—";
+              const pct = (v*100);
+              const cls = v >= 1 ? "bad" : (v >= 0.8 ? "warn" : "good");
+              const color = cls === "bad" ? "var(--bad)" : (cls === "warn" ? "var(--warn)" : "var(--good)");
+              return `<div style="display:flex; align-items:center; justify-content:flex-end; gap:10px;">
+                        <div style="width:110px; height:8px; border:1px solid rgba(255,255,255,.14); border-radius:999px; overflow:hidden;">
+                          <div style="height:100%; width:${Math.min(pct,120)}%; background:${color};"></div>
+                        </div>
+                        <div style="min-width:60px; text-align:right;">${pct.toFixed(1)}%</div>
+                      </div>`;
+            }
+          },
+          {title:"Overage", field:"overage", hozAlign:"right", sorter:"number"},
+          {title:"# Sessions", field:"sessions", hozAlign:"right", sorter:"number"},
+          {title:"Last session", field:"last", sorter:"string"},
+          {title:"Primary CSM", field:"csm", sorter:"string"},
+        ],
+      });
+    }
+
+    // Sessions table
+    const sessionsData = state.sessions.map(s => ({
+      date: s.date,
+      client: s.client,
+      account: s.account,
+      csm: s.csm,
+      minutes: s.durationMinutes,
+      attendees: s.attendees,
+      contact: s.mainContact,
+      brief: s.briefUrl,
+      notes: s.notes
+    }));
+
+    if (tables.sessions) tables.sessions.replaceData(sessionsData);
+    else {
+      tables.sessions = new Tabulator("#sessionsTable", {
+        data: sessionsData,
+        layout: "fitColumns",
+        height: "560px",
+        pagination: true,
+        paginationSize: 12,
+        movableColumns: true,
+        resizableColumns: true,
+        columns: [
+          {title:"Date", field:"date", width:120, sorter:"string", headerFilter:true},
+          {title:"Client", field:"client", minWidth:180, headerFilter:true},
+          {title:"Account", field:"account", minWidth:160, headerFilter:true},
+          {title:"CSM", field:"csm", width:160, headerFilter:true},
+          {title:"Minutes", field:"minutes", hozAlign:"right", sorter:"number"},
+          {title:"Attendees", field:"attendees", hozAlign:"right", sorter:"number"},
+          {title:"Main Contact", field:"contact", minWidth:160, headerFilter:true},
+          {
+            title:"Brief",
+            field:"brief",
+            width:90,
+            formatter:(cell)=>{
+              const url = cell.getValue();
+              if (!url) return "";
+              const safe = escapeHtml(url);
+              return `<a href="${safe}" target="_blank" rel="noopener" style="color:var(--accent); font-weight:700;">Open</a>`;
+            }
+          },
+          {title:"Notes", field:"notes", minWidth:260},
+        ],
+      });
+    }
+  }
+
+  function downloadCSV(filename, rows){
+    const esc = (v)=> `"${String(v ?? '').replaceAll('"','""')}"`;
+    const csv = rows.map(r => r.map(esc).join(",")).join("\n");
+    const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportClientsCSV(){
+    const rows = [
+      ["Client","Locations","CommittedMinutes","ConsumedMinutes","Utilization","OverageMinutes","SessionsCount","LastSessionDate","PrimaryCSM"]
+    ];
+    for (const c of state.clients){
+      rows.push([
+        c.client, c.locations, c.committedMinutes, c.consumedMinutes, c.utilization, c.overageMinutes,
+        c.sessionsCount, c.lastSessionDate, c.primaryCsm
+      ]);
+    }
+    downloadCSV("clients.csv", rows);
+  }
+
+  function exportSessionsCSV(){
+    const rows = [
+      ["Date","Client","Account","CSM","Minutes","Attendees","MainContact","BriefURL","Notes"]
+    ];
+    for (const s of state.sessions){
+      rows.push([s.date, s.client, s.account, s.csm, s.durationMinutes, s.attendees, s.mainContact, s.briefUrl, s.notes]);
+    }
+    downloadCSV("sessions.csv", rows);
+  }
+
+  // Search filters
+  function applyClientSearch(){
+    const q = els.clientSearch.value.trim().toLowerCase();
+    if (!tables.clients) return;
+    if (!q) { tables.clients.clearFilter(true); return; }
+    tables.clients.setFilter((data)=>{
+      return (data.client||"").toLowerCase().includes(q) || (data.csm||"").toLowerCase().includes(q);
+    });
+  }
+  function applySessionSearch(){
+    const q = els.sessionSearch.value.trim().toLowerCase();
+    if (!tables.sessions) return;
+    if (!q) { tables.sessions.clearFilter(true); return; }
+    tables.sessions.setFilter((data)=>{
+      const hay = [data.date,data.client,data.account,data.csm,data.contact,data.notes].join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+  }
+
+  // Nav highlight
+  function setActiveNav(hash){
+    document.getElementById("navOverview").classList.toggle("active", hash === "#overview" || hash === "");
+    document.getElementById("navClients").classList.toggle("active", hash === "#clients");
+    document.getElementById("navSessions").classList.toggle("active", hash === "#sessions");
+  }
+
+  // Events
+  els.refreshBtn.addEventListener("click", async ()=>{
+    try{ await refreshAll(); }
+    catch(e){
+      els.k_api.textContent = "Error";
+      els.k_api_s.textContent = "Check deployment access / JSONP test";
+      setStatus(e.message || String(e), true);
+    }
+  });
+  els.period.addEventListener("change", ()=> els.refreshBtn.click());
+  els.clientSearch.addEventListener("input", applyClientSearch);
+  els.sessionSearch.addEventListener("input", applySessionSearch);
+  els.clearClientSearch.addEventListener("click", ()=>{ els.clientSearch.value=""; applyClientSearch(); });
+  els.clearSessionSearch.addEventListener("click", ()=>{ els.sessionSearch.value=""; applySessionSearch(); });
+  els.exportClientsBtn.addEventListener("click", exportClientsCSV);
+  els.exportSessionsBtn.addEventListener("click", exportSessionsCSV);
+
+  window.addEventListener("hashchange", ()=> setActiveNav(location.hash));
+  setActiveNav(location.hash);
+
+  // Init
   (async function init(){
-    try {
+    try{
       await loadPeriods();
       await refreshAll();
-    } catch (e){
+    } catch(e){
+      els.k_api.textContent = "Error";
+      els.k_api_s.textContent = "Open: …/exec?action=periods&callback=TEST";
       setStatus(e.message || String(e), true);
-      // still show current month as fallback
+      // fallback
       els.period.innerHTML = `<option value="${todayPeriod()}">${todayPeriod()}</option>`;
-      els.period.value = todayPeriod();
     }
   })();
 </script>
