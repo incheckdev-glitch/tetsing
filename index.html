@@ -7,10 +7,9 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     :root{
-      --bg:#0b1020; --panel:#111936; --panel2:#0f1630; --text:#e8eeff;
-      --muted:#aab4d6; --accent:#6aa6ff; --good:#55e0a3; --warn:#ffcc66; --bad:#ff6b6b;
-      --border:rgba(255,255,255,.08);
-      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --bg:#0b1020; --panel:#111936; --text:#e8eeff; --muted:#aab4d6;
+      --border:rgba(255,255,255,.08); --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --accent:#6aa6ff; --good:#55e0a3; --warn:#ffcc66; --bad:#ff6b6b;
     }
     *{ box-sizing:border-box; }
     body{
@@ -27,13 +26,10 @@
       background: rgba(11,16,32,.72);
       z-index:10;
     }
-    h1{ margin:0; font-size:18px; letter-spacing:.2px; }
+    h1{ margin:0; font-size:18px; }
     .sub{ color:var(--muted); font-size:12px; margin-top:6px; }
     .wrap{ max-width:1200px; margin:0 auto; padding:16px; }
-    .controls{
-      display:flex; gap:10px; flex-wrap:wrap; align-items:end;
-      margin:12px 0 16px;
-    }
+    .controls{ display:flex; gap:10px; flex-wrap:wrap; align-items:end; margin:12px 0 16px; }
     label{ font-size:12px; color:var(--muted); display:block; margin-bottom:6px; }
     input, select, button{
       background: var(--panel);
@@ -50,11 +46,7 @@
       border:1px solid rgba(106,166,255,.35);
     }
     button:hover{ filter:brightness(1.08); }
-    .grid{
-      display:grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap:12px;
-    }
+    .grid{ display:grid; grid-template-columns: repeat(12, 1fr); gap:12px; }
     .card{
       background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
       border:1px solid var(--border);
@@ -68,29 +60,18 @@
     .kpi .s{ color:var(--muted); font-size:12px; margin-top:6px; }
     .span6{ grid-column: span 6; }
     .span12{ grid-column: span 12; }
-
-    .row{
-      display:flex; gap:10px; flex-wrap:wrap; align-items:center;
-    }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
     .pill{
       display:inline-flex; gap:6px; align-items:center;
-      padding:6px 10px;
-      border:1px solid var(--border);
-      border-radius: 999px;
-      color: var(--muted);
-      font-size:12px;
+      padding:6px 10px; border:1px solid var(--border);
+      border-radius: 999px; color: var(--muted); font-size:12px;
     }
     .dot{ width:8px; height:8px; border-radius:50%; background:var(--accent); }
     .dot.good{ background:var(--good); }
     .dot.warn{ background:var(--warn); }
     .dot.bad{ background:var(--bad); }
-
     table{ width:100%; border-collapse: collapse; font-size:13px; }
-    th, td{
-      border-bottom: 1px solid var(--border);
-      padding:10px 8px;
-      vertical-align: top;
-    }
+    th, td{ border-bottom: 1px solid var(--border); padding:10px 8px; vertical-align: top; }
     th{ color:var(--muted); font-weight:600; text-align:left; }
     a{ color: var(--accent); text-decoration:none; }
     a:hover{ text-decoration: underline; }
@@ -101,8 +82,7 @@
     .status{
       padding:6px 10px; border-radius: 10px; border:1px solid var(--border);
       background: rgba(255,255,255,.03);
-      color: var(--muted);
-      font-size:12px;
+      color: var(--muted); font-size:12px;
     }
     .err{ border-color: rgba(255,107,107,.35); color: rgba(255,107,107,.95); }
     @media (max-width: 980px){
@@ -115,13 +95,9 @@
 <header>
   <div class="wrap">
     <h1>CSM Sessions Dashboard</h1>
-    <div class="sub">Widgets + searchable tables (Sessions tab + Clients commitment tab)</div>
+    <div class="sub">Auto-connected to Apps Script API (no manual URL input)</div>
 
     <div class="controls">
-      <div style="min-width:360px; flex:1;">
-        <label>Apps Script Web App URL (/exec)</label>
-        <input id="apiUrl" placeholder="Paste your Web App /exec URL here" />
-      </div>
       <div>
         <label>Period (YYYY-MM)</label>
         <select id="period"></select>
@@ -135,7 +111,6 @@
         <input id="to" type="date"/>
       </div>
       <div class="row">
-        <button id="saveBtn">Save URL</button>
         <button id="refreshBtn">Refresh</button>
       </div>
       <div id="status" class="status">Ready</div>
@@ -144,15 +119,15 @@
 </header>
 
 <div class="wrap">
-  <div class="grid" id="kpis">
-    <div class="card kpi"><div class="t">Total Sessions</div><div class="v" id="k_totalSessions">—</div><div class="s" id="k_totalSessions_s"></div></div>
-    <div class="card kpi"><div class="t">Total Minutes</div><div class="v" id="k_totalMinutes">—</div><div class="s" id="k_totalMinutes_s"></div></div>
+  <div class="grid">
+    <div class="card kpi"><div class="t">Total Sessions</div><div class="v" id="k_totalSessions">—</div><div class="s"></div></div>
+    <div class="card kpi"><div class="t">Total Minutes</div><div class="v" id="k_totalMinutes">—</div><div class="s"></div></div>
     <div class="card kpi"><div class="t">Avg Duration</div><div class="v" id="k_avg">—</div><div class="s">minutes per session</div></div>
     <div class="card kpi"><div class="t">Unique Clients</div><div class="v" id="k_clients">—</div><div class="s"></div></div>
 
-    <div class="card kpi"><div class="t">Committed Minutes</div><div class="v" id="k_committed">—</div><div class="s">from Clients tab</div></div>
+    <div class="card kpi"><div class="t">Committed Minutes</div><div class="v" id="k_committed">—</div><div class="s">from Tab 2</div></div>
     <div class="card kpi"><div class="t">Overage Minutes</div><div class="v" id="k_over">—</div><div class="s">consumed - committed</div></div>
-    <div class="card kpi"><div class="t">Overage Amount</div><div class="v" id="k_over_amt">—</div><div class="s small">If you add “Overage rate per hour” column later</div></div>
+    <div class="card kpi"><div class="t">Overage Amount</div><div class="v" id="k_over_amt">—</div><div class="s small">Needs “Overage rate per hour” column if you want money</div></div>
     <div class="card kpi">
       <div class="t">Legend</div>
       <div class="row" style="margin-top:10px;">
@@ -164,22 +139,14 @@
     </div>
 
     <div class="card span6">
-      <div class="row" style="justify-content:space-between;">
-        <div>
-          <div style="font-weight:700;">Minutes per day</div>
-          <div class="small">Based on sessions in this period</div>
-        </div>
-      </div>
+      <div style="font-weight:700;">Minutes per day</div>
+      <div class="small">Based on sessions in this period</div>
       <canvas id="chartDaily" height="120"></canvas>
     </div>
 
     <div class="card span6">
-      <div class="row" style="justify-content:space-between;">
-        <div>
-          <div style="font-weight:700;">Top clients by minutes</div>
-          <div class="small">Top 10</div>
-        </div>
-      </div>
+      <div style="font-weight:700;">Top clients by minutes</div>
+      <div class="small">Top 10</div>
       <canvas id="chartTopClients" height="120"></canvas>
     </div>
 
@@ -189,9 +156,7 @@
           <div style="font-weight:700;">Clients (searchable)</div>
           <div class="small">Commitment vs consumed vs overage</div>
         </div>
-        <div class="row">
-          <input id="clientSearch" placeholder="Search client / CSM..." />
-        </div>
+        <input id="clientSearch" placeholder="Search client / CSM..." />
       </div>
       <div style="overflow:auto; margin-top:10px;">
         <table>
@@ -219,9 +184,7 @@
           <div style="font-weight:700;">Sessions (searchable)</div>
           <div class="small">Filtered by period + optional date range</div>
         </div>
-        <div class="row">
-          <input id="sessionSearch" placeholder="Search client / account / CSM / contact..." />
-        </div>
+        <input id="sessionSearch" placeholder="Search client / account / CSM / contact..." />
       </div>
       <div style="overflow:auto; margin-top:10px;">
         <table>
@@ -246,12 +209,15 @@
 </div>
 
 <script>
+  /*********************************************************
+   * ✅ PUT YOUR DEPLOYMENT LINK HERE ONCE (the /exec URL)
+   *********************************************************/
+  const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbzeiw45H5PVs8_91N8x-u-COmmhzotE41vGgy40-NtEO6vKEMwNgott4VQ0SRy5WZf_/exec";
+
   const els = {
-    apiUrl: document.getElementById('apiUrl'),
     period: document.getElementById('period'),
     from: document.getElementById('from'),
     to: document.getElementById('to'),
-    saveBtn: document.getElementById('saveBtn'),
     refreshBtn: document.getElementById('refreshBtn'),
     status: document.getElementById('status'),
 
@@ -269,26 +235,11 @@
     sessionSearch: document.getElementById('sessionSearch'),
   };
 
-  let state = {
-    summary: null,
-    sessions: [],
-    clients: [],
-    charts: { daily:null, topClients:null }
-  };
+  let state = { summary:null, sessions:[], clients:[], charts:{ daily:null, topClients:null } };
 
   function setStatus(msg, isError=false){
     els.status.textContent = msg;
     els.status.className = 'status' + (isError ? ' err' : '');
-  }
-
-  function loadSavedUrl(){
-    const v = localStorage.getItem('csm_dashboard_api_url') || '';
-    els.apiUrl.value = v;
-  }
-
-  function saveUrl(){
-    localStorage.setItem('csm_dashboard_api_url', els.apiUrl.value.trim());
-    setStatus('Saved URL');
   }
 
   function jsonp(url){
@@ -299,15 +250,9 @@
       s.src = url + sep + 'callback=' + cb;
       s.async = true;
 
-      const timer = setTimeout(() => {
-        cleanup();
-        reject(new Error('JSONP timeout'));
-      }, 20000);
+      const timer = setTimeout(() => { cleanup(); reject(new Error('JSONP timeout')); }, 20000);
 
-      window[cb] = (data) => {
-        cleanup();
-        resolve(data);
-      };
+      window[cb] = (data) => { cleanup(); resolve(data); };
 
       function cleanup(){
         clearTimeout(timer);
@@ -315,25 +260,18 @@
         s.remove();
       }
 
-      s.onerror = () => {
-        cleanup();
-        reject(new Error('JSONP load error'));
-      };
-
+      s.onerror = () => { cleanup(); reject(new Error('JSONP load error')); };
       document.head.appendChild(s);
     });
   }
 
-  function fmtInt(n){ return (n ?? 0).toLocaleString(); }
-  function fmt1(n){ return (n ?? 0).toLocaleString(undefined,{maximumFractionDigits:1}); }
-  function fmt2(n){ return (n ?? 0).toLocaleString(undefined,{maximumFractionDigits:2}); }
-  function fmtPct(x){
-    if (x === null || x === undefined) return '—';
-    return (x*100).toFixed(1) + '%';
-  }
+  const fmtInt = (n)=> (n ?? 0).toLocaleString();
+  const fmt1 = (n)=> (n ?? 0).toLocaleString(undefined,{maximumFractionDigits:1});
+  const fmt2 = (n)=> (n ?? 0).toLocaleString(undefined,{maximumFractionDigits:2});
+  const fmtPct = (x)=> (x==null ? '—' : (x*100).toFixed(1)+'%');
 
   function utilDotClass(util){
-    if (util === null || util === undefined) return '';
+    if (util == null) return '';
     if (util >= 1.0) return 'bad';
     if (util >= 0.8) return 'warn';
     return 'good';
@@ -341,11 +279,8 @@
 
   function esc(s){
     return String(s ?? '')
-      .replaceAll('&','&amp;')
-      .replaceAll('<','&lt;')
-      .replaceAll('>','&gt;')
-      .replaceAll('"','&quot;')
-      .replaceAll("'","&#039;");
+      .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
+      .replaceAll('"','&quot;').replaceAll("'","&#039;");
   }
 
   function todayPeriod(){
@@ -354,37 +289,32 @@
   }
 
   async function loadPeriods(){
-    const base = els.apiUrl.value.trim();
-    if (!base) throw new Error('Paste your Web App /exec URL first.');
-
-    const res = await jsonp(base + '?action=periods');
+    if (!DEFAULT_API_URL || DEFAULT_API_URL.includes("PASTE_")) {
+      throw new Error("Put your Apps Script /exec URL in DEFAULT_API_URL at the top of this file.");
+    }
+    const res = await jsonp(DEFAULT_API_URL + '?action=periods');
     if (!res.ok) throw new Error(res.error || 'Failed to load periods');
 
     els.period.innerHTML = '';
-    res.periods.forEach(p => {
+    (res.periods || []).forEach(p => {
       const opt = document.createElement('option');
       opt.value = p;
       opt.textContent = p;
       els.period.appendChild(opt);
     });
 
-    // pick latest if available
-    const latest = res.periods[0] || todayPeriod();
-    els.period.value = latest;
+    els.period.value = (res.periods && res.periods[0]) ? res.periods[0] : todayPeriod();
   }
 
   async function refreshAll(){
-    const base = els.apiUrl.value.trim();
-    if (!base) { setStatus('Paste your Web App /exec URL first.', true); return; }
-
     const period = els.period.value || todayPeriod();
     const from = els.from.value;
     const to = els.to.value;
 
     setStatus('Loading...');
 
-    const summaryP = jsonp(base + `?action=summary&period=${encodeURIComponent(period)}`);
-    const sessionsUrl = base + `?action=sessions&period=${encodeURIComponent(period)}`
+    const summaryP = jsonp(DEFAULT_API_URL + `?action=summary&period=${encodeURIComponent(period)}`);
+    const sessionsUrl = DEFAULT_API_URL + `?action=sessions&period=${encodeURIComponent(period)}`
       + (from ? `&from=${encodeURIComponent(from)}` : '')
       + (to ? `&to=${encodeURIComponent(to)}` : '');
     const sessionsP = jsonp(sessionsUrl);
@@ -404,12 +334,10 @@
 
   function render(){
     const t = state.summary?.totals || {};
-
     els.k_totalSessions.textContent = fmtInt(t.totalSessions);
     els.k_totalMinutes.textContent = fmtInt(t.totalMinutes);
     els.k_avg.textContent = fmt1(t.avgDurationMinutes);
     els.k_clients.textContent = fmtInt(t.uniqueClients);
-
     els.k_committed.textContent = fmtInt(t.totalCommittedMinutes);
     els.k_over.textContent = fmtInt(t.totalOverageMinutes);
     els.k_over_amt.textContent = fmt2(t.totalOverageAmount);
@@ -421,15 +349,12 @@
 
   function renderClientsTable(){
     const q = els.clientSearch.value.trim().toLowerCase();
-    const rows = (state.clients || []).filter(c => {
-      if (!q) return true;
-      return (c.client || '').toLowerCase().includes(q) ||
-             (c.primaryCsm || '').toLowerCase().includes(q);
-    });
+    const rows = (state.clients || []).filter(c => !q ||
+      (c.client||'').toLowerCase().includes(q) || (c.primaryCsm||'').toLowerCase().includes(q)
+    );
 
     els.clientsBody.innerHTML = rows.map(c => {
       const dot = utilDotClass(c.utilization);
-      const utilPct = fmtPct(c.utilization);
       return `
         <tr>
           <td>
@@ -437,14 +362,14 @@
               <span class="dot ${dot}"></span>
               <div>
                 <div style="font-weight:700;">${esc(c.client)}</div>
-                <div class="small muted">Overage amount: ${fmt2(c.overageAmount)} ${esc(c.currency || '')}</div>
+                <div class="small muted">Overage amount: ${fmt2(c.overageAmount)} ${esc(c.currency||'')}</div>
               </div>
             </div>
           </td>
           <td class="right">${fmtInt(c.locations)}</td>
           <td class="right">${fmtInt(c.committedMinutes)}</td>
           <td class="right">${fmtInt(c.consumedMinutes)}</td>
-          <td class="right">${utilPct}</td>
+          <td class="right">${fmtPct(c.utilization)}</td>
           <td class="right">${fmtInt(c.overageMinutes)}</td>
           <td class="right">${fmtInt(c.sessionsCount)}</td>
           <td class="nowrap">${esc(c.lastSessionDate || '')}</td>
@@ -456,13 +381,9 @@
 
   function renderSessionsTable(){
     const q = els.sessionSearch.value.trim().toLowerCase();
-    const rows = (state.sessions || []).filter(s => {
-      if (!q) return true;
-      const hay = [
-        s.client, s.account, s.csm, s.mainContact, s.notes
-      ].join(' ').toLowerCase();
-      return hay.includes(q);
-    });
+    const rows = (state.sessions || []).filter(s => !q || ([
+      s.client, s.account, s.csm, s.mainContact, s.notes
+    ].join(' ').toLowerCase().includes(q)));
 
     els.sessionsBody.innerHTML = rows.map(s => {
       const link = s.briefUrl ? `<a href="${esc(s.briefUrl)}" target="_blank" rel="noopener">Open</a>` : '';
@@ -486,7 +407,6 @@
     const daily = state.summary?.daily || [];
     const top = state.summary?.topClients || [];
 
-    // Daily minutes chart
     const dLabels = daily.map(x => x.date);
     const dData = daily.map(x => x.minutes);
 
@@ -494,17 +414,9 @@
     state.charts.daily = new Chart(document.getElementById('chartDaily'), {
       type: 'line',
       data: { labels: dLabels, datasets: [{ label: 'Minutes', data: dData, tension: 0.25 }] },
-      options: {
-        responsive: true,
-        plugins: { legend: { display:false } },
-        scales: {
-          x: { ticks: { color: 'rgba(170,180,214,.85)' }, grid: { color: 'rgba(255,255,255,.06)' } },
-          y: { ticks: { color: 'rgba(170,180,214,.85)' }, grid: { color: 'rgba(255,255,255,.06)' } }
-        }
-      }
+      options: { responsive:true, plugins:{ legend:{ display:false } } }
     });
 
-    // Top clients chart
     const cLabels = top.map(x => x.client);
     const cData = top.map(x => x.consumedMinutes);
 
@@ -512,44 +424,28 @@
     state.charts.topClients = new Chart(document.getElementById('chartTopClients'), {
       type: 'bar',
       data: { labels: cLabels, datasets: [{ label: 'Minutes', data: cData }] },
-      options: {
-        responsive: true,
-        plugins: { legend: { display:false } },
-        scales: {
-          x: { ticks: { color: 'rgba(170,180,214,.85)' }, grid: { color: 'rgba(255,255,255,.06)' } },
-          y: { ticks: { color: 'rgba(170,180,214,.85)' }, grid: { color: 'rgba(255,255,255,.06)' } }
-        }
-      }
+      options: { responsive:true, plugins:{ legend:{ display:false } } }
     });
   }
 
-  // Events
-  els.saveBtn.addEventListener('click', () => { saveUrl(); });
   els.refreshBtn.addEventListener('click', async () => {
     try { await refreshAll(); }
     catch (e){ setStatus(e.message || String(e), true); }
   });
-
-  els.clientSearch.addEventListener('input', renderClientsTable);
-  els.sessionSearch.addEventListener('input', renderSessionsTable);
-
   els.period.addEventListener('change', async () => {
     try { await refreshAll(); }
     catch (e){ setStatus(e.message || String(e), true); }
   });
+  els.clientSearch.addEventListener('input', renderClientsTable);
+  els.sessionSearch.addEventListener('input', renderSessionsTable);
 
-  // Init
   (async function init(){
-    loadSavedUrl();
-    if (els.apiUrl.value.trim()){
-      try {
-        await loadPeriods();
-        await refreshAll();
-      } catch (e){
-        setStatus(e.message || String(e), true);
-      }
-    } else {
-      // set default dates empty
+    try {
+      await loadPeriods();
+      await refreshAll();
+    } catch (e){
+      setStatus(e.message || String(e), true);
+      // still show current month as fallback
       els.period.innerHTML = `<option value="${todayPeriod()}">${todayPeriod()}</option>`;
       els.period.value = todayPeriod();
     }
