@@ -362,8 +362,8 @@
       </div>
 
       <div class="field">
-        <label>Google Sheet CSV URL</label>
-        <input id="csvUrl" type="text" placeholder="Paste published CSV export URL here" />
+        <label>Apps Script Web App URL</label>
+        <input id="csvUrl" type="text" placeholder="Paste Apps Script /exec URL here" />
       </div>
 
       <div class="btn-row">
@@ -513,7 +513,7 @@
               </tr>
             </thead>
             <tbody id="tableBody">
-              <tr><td colspan="8" class="empty">Paste a published CSV URL and click Sync.</td></tr>
+              <tr><td colspan="8" class="empty">Paste the Apps Script /exec URL and click Sync.</td></tr>
             </tbody>
           </table>
         </div>
@@ -522,7 +522,7 @@
   </div>
 
   <script>
-    const SAMPLE_CSV = "https://docs.google.com/spreadsheets/d/1-E6Ayluz1w1FmgsS3OSg6V8AYnDlJGUBgFW8DTNAIbw/export?format=csv&gid=1143684598";
+    const SAMPLE_API = "https://script.google.com/macros/s/AKfycbzyAbLpHQ2IQDpcDipuguGy8GQk_D9z0d9-QX1Ohj6qrcSPn3rugeOSWriOjXE4a15p/exec";
 
     const state = {
       rows: [],
@@ -550,20 +550,21 @@
     const fmt = new Intl.NumberFormat();
 
     function normalizeRow(row) {
-      const timestamp = row['Timestamp'] || row['timestamp'] || '';
-      const notes = row['Notes (optional)'] || row['Notes'] || row['notes'] || '';
-      const minutesRaw = row['Time Spent (Minutes)'] || row['Time Spent (Minute)'] || row['Time Spent'] || 0;
-      const minutes = Number(String(minutesRaw).replace(/[^\d.-]/g, '')) || 0;
-      const date = parseDate(timestamp);
+      const timestamp = row.timestamp || row.Timestamp || row.timestampDateTime || '';
+      const notes = row.notes || row['Notes (optional)'] || row['Notes'] || '';
+      const minutesRaw = row.minutes ?? row['Time Spent (Minutes)'] ?? row['Time Spent (Minute)'] ?? row['Time Spent'] ?? 0;
+      const minutes = Number(String(minutesRaw).replace(/[^0-9.-]/g, '')) || 0;
+      const dateSource = row.date || timestamp;
+      const date = parseDate(dateSource);
 
       return {
         timestamp,
-        csm: (row['CSM Name'] || '').trim(),
-        client: (row['Client'] || '').trim(),
+        csm: String(row.csm || row['CSM Name'] || '').trim(),
+        client: String(row.client || row['Client'] || '').trim(),
         minutes,
-        type: (row['Type of Support'] || '').trim(),
-        effort: (row['Effort Requirement'] || '').trim(),
-        channel: (row['Support Channel'] || '').trim(),
+        type: String(row.type || row['Type of Support'] || '').trim(),
+        effort: String(row.effort || row['Effort Requirement'] || '').trim(),
+        channel: String(row.channel || row['Support Channel'] || '').trim(),
         notes: String(notes).trim(),
         date,
         dateKey: date ? date.toISOString().slice(0, 10) : '',
@@ -785,37 +786,68 @@
       `).join('');
     }
 
+    function buildApiUrl(baseUrl, action) {
+      const sep = baseUrl.includes('?') ? '&' : '?';
+      return `${baseUrl}${sep}action=${encodeURIComponent(action)}&callback=__dashboardJsonp`;
+    }
+
+    function cleanupJsonp(scriptEl) {
+      if (scriptEl && scriptEl.parentNode) scriptEl.parentNode.removeChild(scriptEl);
+      try { delete window.__dashboardJsonp; } catch (_) { window.__dashboardJsonp = undefined; }
+    }
+
+    function loadViaJsonp(url) {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        const timer = setTimeout(() => {
+          cleanupJsonp(script);
+          reject(new Error('Request timed out'));
+        }, 15000);
+
+        window.__dashboardJsonp = (data) => {
+          clearTimeout(timer);
+          cleanupJsonp(script);
+          resolve(data);
+        };
+
+        script.onerror = () => {
+          clearTimeout(timer);
+          cleanupJsonp(script);
+          reject(new Error('Could not reach Apps Script endpoint'));
+        };
+
+        script.src = url;
+        document.body.appendChild(script);
+      });
+    }
+
     async function loadCSV() {
       const url = els.csvUrl.value.trim();
       if (!url) {
-        setStatus('Paste a published CSV URL', true);
+        setStatus('Paste an Apps Script /exec URL', true);
         return;
       }
 
       setStatus('Loading…');
 
-      Papa.parse(url, {
-        download: true,
-        header: true,
-        skipEmptyLines: true,
-        complete: (result) => {
-          if (result.errors?.length) {
-            console.error(result.errors);
-          }
-
-          state.rows = result.data
-            .map(normalizeRow)
-            .filter(r => r.csm || r.client || r.timestamp);
-
-          updateFilterOptions(state.rows);
-          applyFilters();
-          setStatus(`Connected · ${state.rows.length} rows`);
-        },
-        error: (error) => {
-          console.error(error);
-          setStatus('Could not load CSV. Check sharing/export URL.', true);
+      try {
+        const response = await loadViaJsonp(buildApiUrl(url, 'tasks'));
+        if (!response || response.ok === false) {
+          throw new Error(response?.error || 'Apps Script returned an error');
         }
-      });
+
+        const tasks = response.tasks || response.activities || [];
+        state.rows = tasks
+          .map(normalizeRow)
+          .filter(r => r.csm || r.client || r.timestamp);
+
+        updateFilterOptions(state.rows);
+        applyFilters();
+        setStatus(`Connected · ${state.rows.length} tasks`);
+      } catch (error) {
+        console.error(error);
+        setStatus('Could not load Apps Script data. Check the /exec URL and deployment access.', true);
+      }
     }
 
     function exportFilteredCSV() {
@@ -872,10 +904,9 @@
       els.fromFilter, els.toFilter, els.textFilter, els.tableSearch
     ].forEach(el => el.addEventListener('input', applyFilters));
 
-    els.csvUrl.value = SAMPLE_CSV;
+    els.csvUrl.value = SAMPLE_API;
     renderKPIs();
     renderTable();
-    renderCharts();
   </script>
 </body>
 </html>
