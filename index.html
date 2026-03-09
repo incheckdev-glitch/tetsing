@@ -196,9 +196,49 @@
 
     .grid-kpi {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 14px;
       margin-bottom: 14px;
+    }
+
+    .analytics-grid {
+      margin-bottom: 14px;
+    }
+
+    .insight-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .insight-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(37,99,235,0.04), rgba(6,182,212,0.04));
+      border: 1px solid rgba(37,99,235,0.08);
+    }
+
+    .insight-item strong {
+      display: block;
+      font-size: 13px;
+      color: #0f172a;
+      margin-bottom: 3px;
+    }
+
+    .insight-item span {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .insight-metric {
+      font-size: 22px;
+      font-weight: 800;
+      color: #1d4ed8;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
     }
 
     .card {
@@ -497,6 +537,48 @@
           <div class="kpi-value" id="kpiClients">0</div>
           <div class="kpi-sub" id="kpiClientsSub">Unique clients in current view</div>
         </div>
+        <div class="card">
+          <div class="kpi-label">Weighted Load Score</div>
+          <div class="kpi-value" id="kpiWeighted">0</div>
+          <div class="kpi-sub" id="kpiWeightedSub">Effort-adjusted workload</div>
+        </div>
+        <div class="card">
+          <div class="kpi-label">High-Effort Share</div>
+          <div class="kpi-value" id="kpiHighEffort">0%</div>
+          <div class="kpi-sub" id="kpiHighEffortSub">Of visible submitted work</div>
+        </div>
+      </section>
+
+      <section class="chart-grid analytics-grid">
+        <div class="card">
+          <div class="card-head">
+            <h3>Workload Insights</h3>
+            <span>Key derived signals</span>
+          </div>
+          <div id="insightList" class="insight-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <h3>Top CSM Snapshot</h3>
+            <span>Tasks, minutes, clients</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>CSM</th>
+                  <th>Tasks</th>
+                  <th>Minutes</th>
+                  <th>Avg / Task</th>
+                  <th>Clients</th>
+                </tr>
+              </thead>
+              <tbody id="csmSummaryBody">
+                <tr><td colspan="5" class="empty">No data yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
       <section class="main-grid">
@@ -544,6 +626,37 @@
             <span>Where work is happening</span>
           </div>
           <div class="chart-wrap"><canvas id="channelChart"></canvas></div>
+        </div>
+      </section>
+
+      <section class="chart-grid analytics-grid">
+        <div class="card">
+          <div class="card-head">
+            <h3>Weekday Workload</h3>
+            <span>Minutes by day of week</span>
+          </div>
+          <div class="chart-wrap"><canvas id="weekdayChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <h3>Weekly Workload Trend</h3>
+            <span>Minutes by week</span>
+          </div>
+          <div class="chart-wrap"><canvas id="weeklyChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <h3>Effort Mix by CSM</h3>
+            <span>Stacked task count</span>
+          </div>
+          <div class="chart-wrap"><canvas id="csmEffortChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <h3>Client Concentration</h3>
+            <span>Share of total minutes</span>
+          </div>
+          <div class="chart-wrap"><canvas id="clientShareChart"></canvas></div>
         </div>
       </section>
 
@@ -682,6 +795,7 @@
       });
 
       renderKPIs();
+      renderInsights();
       renderCharts();
       renderTable();
     }
@@ -699,6 +813,32 @@
       return [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit);
     }
 
+    function effortWeight(value) {
+      const key = String(value || '').trim().toLowerCase();
+      if (key === 'high') return 3;
+      if (key === 'medium') return 2;
+      if (key === 'low') return 1;
+      return 1;
+    }
+
+    function weekdayName(date) {
+      return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()];
+    }
+
+    function weekKey(date) {
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const day = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - day);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+      return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+    }
+
+    function percent(value, total) {
+      if (!total) return '0%';
+      return `${((value / total) * 100).toFixed(1)}%`;
+    }
+
     function renderKPIs() {
       const rows = state.filtered;
       const totalTasks = rows.length;
@@ -706,14 +846,83 @@
       const avg = totalTasks ? (totalMinutes / totalTasks).toFixed(1) : '0';
       const clients = new Set(rows.map(r => r.client).filter(Boolean)).size;
       const csms = new Set(rows.map(r => r.csm).filter(Boolean)).size;
+      const weighted = rows.reduce((sum, row) => sum + effortWeight(row.effort), 0);
+      const highEffort = rows.filter(r => String(r.effort || '').toLowerCase() === 'high').length;
 
       document.getElementById('kpiTasks').textContent = fmt.format(totalTasks);
       document.getElementById('kpiMinutes').textContent = fmt.format(totalMinutes);
       document.getElementById('kpiAvg').textContent = fmt.format(avg);
       document.getElementById('kpiClients').textContent = fmt.format(clients);
+      document.getElementById('kpiWeighted').textContent = fmt.format(weighted);
+      document.getElementById('kpiHighEffort').textContent = percent(highEffort, totalTasks);
       document.getElementById('kpiTasksSub').textContent = `${fmt.format(csms)} active CSMs in current view`;
       document.getElementById('kpiMinutesSub').textContent = totalTasks ? `${fmt.format(totalMinutes)} tracked minutes` : 'Across current filter';
       document.getElementById('kpiClientsSub').textContent = `${fmt.format(clients)} unique clients in current view`;
+      document.getElementById('kpiWeightedSub').textContent = totalTasks ? `Average score ${((weighted || 0) / totalTasks).toFixed(1)} per task` : 'Effort-adjusted workload';
+      document.getElementById('kpiHighEffortSub').textContent = `${fmt.format(highEffort)} high-effort tasks in current filter`;
+    }
+
+    function renderInsights() {
+      const rows = state.filtered;
+      const insightList = document.getElementById('insightList');
+      const csmSummaryBody = document.getElementById('csmSummaryBody');
+
+      if (!rows.length) {
+        insightList.innerHTML = '<div class="empty">No workload signals yet for the selected filters.</div>';
+        csmSummaryBody.innerHTML = '<tr><td colspan="5" class="empty">No data yet.</td></tr>';
+        return;
+      }
+
+      const totalMinutes = rows.reduce((sum, row) => sum + row.minutes, 0);
+      const byCsmMinutes = topEntries(aggregate(rows, r => r.csm, r => r.minutes), 1)[0] || ['—', 0];
+      const byClientMinutes = topEntries(aggregate(rows, r => r.client, r => r.minutes), 1)[0] || ['—', 0];
+      const topFiveClientMinutes = topEntries(aggregate(rows, r => r.client, r => r.minutes), 5).reduce((sum, [, value]) => sum + value, 0);
+      const dominantType = topEntries(aggregate(rows, r => r.type), 1)[0] || ['—', 0];
+      const dominantChannel = topEntries(aggregate(rows, r => r.channel), 1)[0] || ['—', 0];
+      const weekdayMinutes = topEntries(aggregate(rows.filter(r => r.date), r => weekdayName(r.date), r => r.minutes), 1)[0] || ['—', 0];
+
+      const insights = [
+        { label: 'Busiest CSM', detail: `${byCsmMinutes[0]} is carrying the heaviest visible load by minutes.`, metric: `${fmt.format(byCsmMinutes[1])} min` },
+        { label: 'Busiest Client', detail: `${byClientMinutes[0]} consumes the most visible support time.`, metric: `${fmt.format(byClientMinutes[1])} min` },
+        { label: 'Client Concentration', detail: 'Top 5 clients share of visible workload minutes.', metric: percent(topFiveClientMinutes, totalMinutes) },
+        { label: 'Dominant Work Type', detail: `${dominantType[0]} appears most often in the current filter.`, metric: fmt.format(dominantType[1]) },
+        { label: 'Primary Channel', detail: `${dominantChannel[0]} is the main route for submitted work.`, metric: fmt.format(dominantChannel[1]) },
+        { label: 'Peak Weekday', detail: `${weekdayMinutes[0]} carries the highest visible workload minutes.`, metric: `${fmt.format(weekdayMinutes[1])} min` },
+      ];
+
+      insightList.innerHTML = insights.map(item => `
+        <div class="insight-item">
+          <div>
+            <strong>${escapeHtml(item.label)}</strong>
+            <span>${escapeHtml(item.detail)}</span>
+          </div>
+          <div class="insight-metric">${escapeHtml(item.metric)}</div>
+        </div>
+      `).join('');
+
+      const csmMap = {};
+      rows.forEach(r => {
+        const key = r.csm || 'Unknown';
+        if (!csmMap[key]) csmMap[key] = { tasks: 0, minutes: 0, clients: new Set() };
+        csmMap[key].tasks += 1;
+        csmMap[key].minutes += r.minutes || 0;
+        if (r.client) csmMap[key].clients.add(r.client);
+      });
+
+      const summaryRows = Object.entries(csmMap)
+        .map(([name, value]) => ({ name, tasks: value.tasks, minutes: value.minutes, avg: value.tasks ? value.minutes / value.tasks : 0, clients: value.clients.size }))
+        .sort((a, b) => (b.minutes - a.minutes) || (b.tasks - a.tasks))
+        .slice(0, 8);
+
+      csmSummaryBody.innerHTML = summaryRows.map(row => `
+        <tr>
+          <td>${escapeHtml(row.name)}</td>
+          <td>${fmt.format(row.tasks)}</td>
+          <td>${fmt.format(row.minutes)}</td>
+          <td>${fmt.format(row.avg.toFixed(1))}</td>
+          <td>${fmt.format(row.clients)}</td>
+        </tr>
+      `).join('');
     }
 
     function destroyCharts() {
@@ -730,33 +939,57 @@
     function renderCharts() {
       destroyCharts();
       const rows = state.filtered;
+      if (!rows.length) return;
 
       const trendMap = aggregate(rows.filter(r => r.dateKey), r => r.dateKey);
       const trendLabels = [...trendMap.keys()].sort();
       const trendData = trendLabels.map(label => trendMap.get(label));
 
-      const csmEntries = topEntries(aggregate(rows, r => r.csm), 10);
+      const csmEntries = topEntries(aggregate(rows, r => r.csm, r => r.minutes), 10);
       const clientEntries = topEntries(aggregate(rows, r => r.client, r => r.minutes), 10);
-      const typeEntries = topEntries(aggregate(rows, r => r.type));
-      const effortEntries = topEntries(aggregate(rows, r => r.effort));
-      const channelEntries = topEntries(aggregate(rows, r => r.channel));
+      const typeEntries = topEntries(aggregate(rows, r => r.type), 10);
+      const effortEntries = topEntries(aggregate(rows, r => r.effort), 10);
+      const channelEntries = topEntries(aggregate(rows, r => r.channel), 10);
 
-      makeChart('trendChart', {
-        type: 'line',
-        data: {
-          labels: trendLabels,
-          datasets: [{ label: 'Tasks', data: trendData, borderColor: '#60a5fa', backgroundColor: 'rgba(96,165,250,0.18)', fill: true, tension: 0.28 }]
-        },
-        options: baseOptions('Tasks')
+      const weekdayOrder = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const weekdayMap = new Map(weekdayOrder.map(day => [day, 0]));
+      rows.filter(r => r.date).forEach(r => weekdayMap.set(weekdayName(r.date), (weekdayMap.get(weekdayName(r.date)) || 0) + (r.minutes || 0)));
+
+      const weeklyMap = aggregate(rows.filter(r => r.date), r => weekKey(r.date), r => r.minutes);
+      const weeklyLabels = [...weeklyMap.keys()].sort();
+      const weeklyData = weeklyLabels.map(label => weeklyMap.get(label));
+
+      const topCsmNames = csmEntries.slice(0, 6).map(([name]) => name);
+      const effortBuckets = { Low: [], Medium: [], High: [], Other: [] };
+      topCsmNames.forEach(name => {
+        const rowsForCsm = rows.filter(r => r.csm === name);
+        effortBuckets.Low.push(rowsForCsm.filter(r => String(r.effort || '').toLowerCase() === 'low').length);
+        effortBuckets.Medium.push(rowsForCsm.filter(r => String(r.effort || '').toLowerCase() === 'medium').length);
+        effortBuckets.High.push(rowsForCsm.filter(r => String(r.effort || '').toLowerCase() === 'high').length);
+        effortBuckets.Other.push(rowsForCsm.filter(r => !['low','medium','high'].includes(String(r.effort || '').toLowerCase())).length);
       });
 
-      makeChart('csmChart', {
-        type: 'bar',
-        data: {
-          labels: csmEntries.map(([k]) => k),
-          datasets: [{ label: 'Tasks', data: csmEntries.map(([,v]) => v), backgroundColor: '#22c55e' }]
+      const clientShareEntries = topEntries(aggregate(rows, r => r.client, r => r.minutes), 5);
+      const otherClientMinutes = Math.max(0, rows.reduce((sum, r) => sum + (r.minutes || 0), 0) - clientShareEntries.reduce((sum, [, v]) => sum + v, 0));
+      const clientShareLabels = clientShareEntries.map(([k]) => k);
+      const clientShareData = clientShareEntries.map(([,v]) => v);
+      if (otherClientMinutes > 0) {
+        clientShareLabels.push('Others');
+        clientShareData.push(otherCliefunction baseOptions(label) {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: '#334155' } }
         },
-        options: baseOptions('Tasks')
+        scales: {
+          x: { ticks: { color: '#64748b' }, grid: { color: 'rgba(15,23,42,0.06)' } },
+          y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(15,23,42,0.06)' }, title: { display: true, text: label, color: '#64748b' } }
+        }
+      };
+    } [{ label: 'Minutes', data: csmEntries.map(([,v]) => v), backgroundColor: '#06b6d4' }]
+        },
+        options: baseOptions('Minutes')
       });
 
       makeChart('clientChart', {
@@ -772,7 +1005,7 @@
         type: 'doughnut',
         data: {
           labels: typeEntries.map(([k]) => k),
-          datasets: [{ data: typeEntries.map(([,v]) => v), backgroundColor: ['#60a5fa','#22c55e','#f59e0b','#a78bfa','#ef4444','#14b8a6'] }]
+          datasets: [{ data: typeEntries.map(([,v]) => v), backgroundColor: ['#2563eb','#06b6d4','#16a34a','#f59e0b','#8b5cf6','#ef4444'] }]
         },
         options: doughnutOptions()
       });
@@ -781,7 +1014,7 @@
         type: 'pie',
         data: {
           labels: effortEntries.map(([k]) => k),
-          datasets: [{ data: effortEntries.map(([,v]) => v), backgroundColor: ['#22c55e','#f59e0b','#ef4444','#60a5fa'] }]
+          datasets: [{ data: effortEntries.map(([,v]) => v), backgroundColor: ['#16a34a','#f59e0b','#ef4444','#94a3b8'] }]
         },
         options: doughnutOptions()
       });
@@ -790,9 +1023,50 @@
         type: 'bar',
         data: {
           labels: channelEntries.map(([k]) => k),
-          datasets: [{ label: 'Tasks', data: channelEntries.map(([,v]) => v), backgroundColor: '#a78bfa' }]
+          datasets: [{ label: 'Tasks', data: channelEntries.map(([,v]) => v), backgroundColor: '#8b5cf6' }]
         },
         options: baseOptions('Tasks')
+      });
+
+      makeChart('weekdayChart', {
+        type: 'bar',
+        data: {
+          labels: weekdayOrder,
+          datasets: [{ label: 'Minutes', data: weekdayOrder.map(day => weekdayMap.get(day) || 0), backgroundColor: '#0ea5e9' }]
+        },
+        options: baseOptions('Minutes')
+      });
+
+      makeChart('weeklyChart', {
+        type: 'line',
+        data: {
+          labels: weeklyLabels,
+          datasets: [{ label: 'Minutes', data: weeklyData, borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,0.10)', fill: true, tension: 0.24 }]
+        },
+        options: baseOptions('Minutes')
+      });
+
+      makeChart('csmEffortChart', {
+        type: 'bar',
+        data: {
+          labels: topCsmNames,
+          datasets: [
+            { label: 'Low', data: effortBuckets.Low, backgroundColor: '#16a34a' },
+            { label: 'Medium', data: effortBuckets.Medium, backgroundColor: '#f59e0b' },
+            { label: 'High', data: effortBuckets.High, backgroundColor: '#ef4444' },
+            { label: 'Other', data: effortBuckets.Other, backgroundColor: '#94a3b8' }
+          ]
+        },
+        options: stackedOptions('Tasks')
+      });
+
+      makeChart('clientShareChart', {
+        type: 'doughnut',
+        data: {
+          labels: clientShareLabels,
+          datasets: [{ data: clientShareData, backgroundColor: ['#2563eb','#06b6d4','#16a34a','#f59e0b','#8b5cf6','#94a3b8'] }]
+        },
+        options: doughnutOptions()
       });
     }
 
@@ -815,7 +1089,21 @@
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'bottom', labels: { color: '#d9e3fb' } }
+          legend: { position: 'bottom', labels: { color: '#334155' } }
+        }
+      };
+    }
+
+    function stackedOptions(label) {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: '#334155' } }
+        },
+        scales: {
+          x: { stacked: true, ticks: { color: '#64748b' }, grid: { color: 'rgba(15,23,42,0.06)' } },
+          y: { stacked: true, ticks: { color: '#64748b' }, grid: { color: 'rgba(15,23,42,0.06)' }, title: { display: true, text: label, color: '#64748b' } }
         }
       };
     }
